@@ -160,8 +160,6 @@ int main(int argc, char *argv[]) {
     
     }
 
-    //getNextToken();
-
     return 0;
 }
 
@@ -240,6 +238,7 @@ int slice(char *newString, char *string, char characterToLookFor, int length) {
     if (k == -1) return 0;
 
     k = k + 1;
+
     int j = 0;
 
     for (j = 0; j < length; j++) {
@@ -284,15 +283,21 @@ int removeCharacters(char *fileCopyPath, char characterToRemove) {
             }
 
             fclose(copy);
+
             fclose(tempFile);
 
-            if(remove(fileCopyPath) != 0) {
+            if (remove(fileCopyPath) != 0) {
+            
                 fprintf(stderr, "Error removing original file\n");
+            
             }
-            if(rename("./temp/removeCharactersTempFile.txt", fileCopyPath) != 0) {
+            
+            if (rename("./temp/removeCharactersTempFile.txt", fileCopyPath) != 0) {
+            
                 fprintf(stderr, "Error renaming temporary file\n");
+            
             }
-
+ 
         }
 
     }
@@ -306,36 +311,50 @@ int getNextToken() {
 
     FILE *copy = fopen("./output/example-1.txt", "rb");
 
-    FILE *commentariesIdentified = fopen("./output/commentariesIdentified.txt", "wb");
+    FILE *commentariesIdentified = fopen("./output/commentariesIdentified.txt", "ab");
 
-    if (!copy) return 1;
+    if (!copy || !commentariesIdentified) return 1;
+
+    int id = 1;
 
     int i = 0;
 
-    // Comments
-    goto comments;
+    int c;
+
+    char commentariesBuffer[256];
+
+    while ((c = fgetc(copy)) != EOF) {
+
+        // Comments
+        goto comments;
+
+        comment_end:
+            commentariesBuffer[0] = '\0';
+            i = 0;
+
+    }
+
+    goto end;
 
     comments:
-
-        char commentariesBuffer[256];
-
-        int c = fgetc(copy);
 
         goto Q0;
 
         Q0:
 
-            if (c != EOF && c == '#') {
+            if (c != EOF && c == '#' && i < sizeof(commentariesBuffer) - 1) {
 
                 commentariesBuffer[i] = c;
-
+                
                 c = fgetc(copy);
+
+                i++;
 
                 goto Q1;
 
             } else {
 
-                printf("[ AVISO ] Comentário não encontrado!\n");
+                //printf("[ AVISO ] Comentário não encontrado!\n");
 
                 goto comment_end;
 
@@ -343,21 +362,27 @@ int getNextToken() {
             
         Q1:
 
-            if (c != EOF && c != '\n') {
+            if (c != EOF && c != '\n' && i < sizeof(commentariesBuffer) - 1) {
 
                 commentariesBuffer[i] = c;
-                    
-                i++;
+
+                c = fgetc(copy);
                 
+                i++;
+
                 goto Q1;
     
             } else if (c == '\n') {
 
-                commentariesBuffer[i] = '\0';
+                commentariesBuffer[i++] = '\n';
+
+                commentariesBuffer[i++] = '\0';
 
                 fputs(commentariesBuffer, commentariesIdentified);
     
-                printf("[ SUCESSO ] Comentário aceito!\n");
+                printf("[ SUCESSO ] Comentário aceito na linha %d!\n", id);
+
+                id++;
 
                 goto comment_end;
                 
@@ -369,9 +394,7 @@ int getNextToken() {
                 
             }
             
-    comment_end:
-            
-    commentariesBuffer[0] = '\0';
+    end:
     i = 0;
 
     fclose(copy);
