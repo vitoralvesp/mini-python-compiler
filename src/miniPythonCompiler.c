@@ -10,6 +10,15 @@
 
 #define FILE_TEMP_PATH "../temp/"
 
+#define FILEPATH_COMMENTARIES_DEDICATED_FILE "./output/commentariesIdentified.txt"
+
+#define FILEPATH_IDENTIFIERS_DEDICATED_FILE "./output/identifiersIdentified.txt"
+
+
+
+
+
+
 typedef struct Token {
     char *type;
     char *value;
@@ -311,28 +320,41 @@ int getNextToken() {
 
     FILE *copy = fopen("./output/example-1.txt", "rb");
 
-    FILE *commentariesIdentified = fopen("./output/commentariesIdentified.txt", "w");
+    FILE *commentariesIdentified = fopen(FILEPATH_COMMENTARIES_DEDICATED_FILE, "w");
 
-    if (!copy || !commentariesIdentified) return 1;
+    FILE *identifiersIdentified = fopen(FILEPATH_IDENTIFIERS_DEDICATED_FILE, "w");
+
+    if (!copy || !commentariesIdentified || !identifiersIdentified) return 1;
 
     int id = 0;
 
     int i = 0;
 
+    int j = 0;
+
     int c;
 
     char commentariesBuffer[256];
+
+    char identifiersBuffer[256];
 
     while ((c = fgetc(copy)) != EOF) {
 
         if (c == '\n') id++;
 
         // Comments
-        goto comments;
+        if (c == '#') goto comments;
+
+        // Identifiers
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') goto identifiers;
 
         comment_end:
             commentariesBuffer[0] = '\0';
             i = 0;
+        
+        identifier_end:
+            identifiersBuffer[0] = '\0';
+            j = 0;
 
     }
 
@@ -340,9 +362,9 @@ int getNextToken() {
 
     comments:
 
-        goto Q0;
+        goto COMMENTARY_Q0;
 
-        Q0:
+        COMMENTARY_Q0:
 
             if (c != EOF && c == '#' && i < sizeof(commentariesBuffer) - 1) {
 
@@ -352,7 +374,7 @@ int getNextToken() {
 
                 i++;
 
-                goto Q1;
+                goto COMMENTARY_Q1;
 
             } else {
 
@@ -360,7 +382,7 @@ int getNextToken() {
 
             }
             
-        Q1:
+        COMMENTARY_Q1:
 
             if (c != EOF && c != '\n' && i < sizeof(commentariesBuffer) - 1) {
 
@@ -371,7 +393,7 @@ int getNextToken() {
                 i++;
 
                 
-                goto Q1;
+                goto COMMENTARY_Q1;
                 
             } else if (c == '\n') {
                 
@@ -398,9 +420,61 @@ int getNextToken() {
                 goto comment_end;
                 
             }
+
+    identifiers:
+
+            goto IDENTIFIER_Q0;
+
+            IDENTIFIER_Q0:
+
+               if (c != EOF && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') && j < sizeof(identifiersBuffer) - 1) {
+
+                    identifiersBuffer[j] = c;
+                    
+                    c = fgetc(copy);
+
+                    j++;
+
+                    goto IDENTIFIER_Q1;
+
+                } else {
+
+                    goto identifier_end;
+
+                }
+            
+            IDENTIFIER_Q1:
+
+                if (c != EOF && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') && j < sizeof(identifiersBuffer) - 1) {
+
+                    identifiersBuffer[j] = c;
+
+                    c = fgetc(copy);
+                    
+                    j++;
+                    
+                    goto IDENTIFIER_Q1;
+                    
+                } else {
+                    
+                    identifiersBuffer[j] = '\0';
+
+                    char lineIdentifier[256];
+
+                    snprintf(lineIdentifier, sizeof(lineIdentifier), "Identificado na linha %d: %s\n", id, identifiersBuffer);
+                    
+                    fputs(lineIdentifier, identifiersIdentified);
+
+                    printf("[ SUCESSO ] Identificador aceito na linha %d!\n", id);
+
+                    goto identifier_end;
+                    
+                }
+
             
     end:
     i = 0;
+    j = 0;
 
     fclose(copy);
     fclose(commentariesIdentified);
