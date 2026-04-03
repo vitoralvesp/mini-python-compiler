@@ -6,7 +6,7 @@
 // ETAPA 0: RECEBIMENTO DO ARQUIVO 
 // ******************************************************
 
-#define FILE_OUTPUT_PATH "../output/"
+#define FILE_OUTPUT_PATH "./output/"
 
 #define FILE_TEMP_PATH "../temp/"
 
@@ -22,7 +22,7 @@ int readFile(int argc, char *argv[]);
  *  @param argv vetor com os parâmetros recebidos na linha de comando
  *  @return 0 se o arquivo for válido, 1 caso contrário.
  */
-int createFileCopy(int argc, char *argv[]);
+FILE *createFileCopy(int argc, char *argv[]);
 
 /** @brief Recebe um caractere a ser removido de um arquivo e procede com a busca para removêlo, retornando 0 se o processo for bem-sucedido e 1 caso contrário.
  *  @param argc número de parâmetros recebidos na linha de comando.
@@ -30,8 +30,9 @@ int createFileCopy(int argc, char *argv[]);
  *  @param characterToRemove caractere a ser removido do arquivo.
  *  @return 0 se o arquivo for válido, 1 caso contrário.
  */
-int removeCharacters(int argc, char *argv[], char *characterToRemove);
+int removeCharacters(char *fileCopyPath, char characterToRemove);
 
+int slice(char *newString, char *string, char caracterToLookFor, int length);
 
 int main(int argc, char *argv[]) {
 
@@ -47,7 +48,9 @@ int main(int argc, char *argv[]) {
 
     }
 
-    if (createFileCopy(argc, argv) != 0) {
+    FILE *copy = createFileCopy(argc, argv);
+
+    if (copy == NULL) {
 
         puts("[ ERRO ] Não foi possível criar uma cópia do arquivo de entrada.");
         
@@ -55,17 +58,34 @@ int main(int argc, char *argv[]) {
 
     } else {
 
-        puts("[ SUCESSO ] Arquivo copiado em '../output' com sucesso!");
+        puts("[ SUCESSO ] Arquivo copiado em '/output' com sucesso!");
 
     }
 
-    int didCommentsRemovalProcessSucceed = removeCharacters(argc, argv, "#");
-    
-    int didWhiteSpacesRemovalProcessSucceed = removeCharacters(argc, argv, " ");
-    
-    int didTabsRemovalProcessSucceed = removeCharacters(argc, argv, "\t");
+    char fileCopyPath[256];
+    char fileName[256];
 
-    int didLineBreaksRemovalProcessSucceed = removeCharacters(argc, argv, "\n");
+    int result = slice(fileName, argv[1], '/', strlen(argv[1]));
+
+    snprintf(fileCopyPath, sizeof(fileCopyPath), "%s%s", FILE_OUTPUT_PATH, fileName);
+
+    if (result == -1) {
+    
+        puts("[ ERRO ] Não foi possível extrair o nome do arquivo de entrada para o processo de remoção de caracteres.");
+    
+        return -1;
+    
+    }
+
+    printf("Caminho do arquivo copiado: %s\n", fileCopyPath);
+
+    int didCommentsRemovalProcessSucceed = removeCharacters(fileCopyPath, '#');
+    
+    int didWhiteSpacesRemovalProcessSucceed = removeCharacters(fileCopyPath, ' ');
+    
+    int didTabsRemovalProcessSucceed = removeCharacters(fileCopyPath, '\t');
+
+    int didLineBreaksRemovalProcessSucceed = removeCharacters(fileCopyPath, '\n');
 
     if (didCommentsRemovalProcessSucceed != 0) {
 
@@ -119,6 +139,8 @@ int main(int argc, char *argv[]) {
     
     }
 
+    //getNextToken();
+
     return 0;
 }
 
@@ -141,7 +163,7 @@ int readFile(int argc, char *argv[]) {
 }
 
 
-int createFileCopy(int argc, char *argv[]) {
+FILE *createFileCopy(int argc, char *argv[]) {
 
     const char *base = strrchr(argv[1], '/');
     
@@ -155,10 +177,12 @@ int createFileCopy(int argc, char *argv[]) {
 
     FILE *copy = fopen(outputFilePath, "wb");
 
-    int result = 0;
+    if (!file || !copy) {
+        if (file) fclose(file);
+        if (copy) fclose(copy);
 
-    if (!file || !copy) 
-        result = 1;
+        return NULL;
+    }
     
     else {
         
@@ -169,80 +193,101 @@ int createFileCopy(int argc, char *argv[]) {
                 fputc(c, copy);
         
         }
-        
-        result = 0;
+
     }
 
     fclose(file);
 
     fclose(copy);
     
-    return result;
+    return copy;
+}
+
+int slice(char *newString, char *string, char characterToLookFor, int length) {
+
+    int k = -1;
+
+    for (int i = 0; i < length; i++) {
+
+        if (string[i] == characterToLookFor) {
+            k = i;
+            break;
+        }
+
+    }
+
+    if (k == -1) return 0;
+
+    k = k + 1;
+    int j = 0;
+
+    for (j = 0; j < length; j++) {
+
+        newString[j] = string[k + j];
+
+    }
+
+    newString[j] = '\0';
+
+    return 0;
+
+}
+
+int removeCharacters(char *fileCopyPath, char characterToRemove) {
+
+    FILE *copy = fopen(fileCopyPath, "rb");
+
+    if (!copy) {
+        return 1;
+
+    } else {
+        
+        FILE *tempFile = fopen("./temp/removeCharactersTempFile.txt", "wb");
+
+        if (!tempFile) {
+            fclose(copy);
+            return 1;
+        
+        } else {
+
+            int c;
+
+            while ((c = fgetc(copy)) != EOF) {
+
+                if (c != characterToRemove) {
+
+                    fputc(c, tempFile);
+
+                }
+        
+            }
+
+            fclose(copy);
+            fclose(tempFile);
+
+            if(remove(fileCopyPath) != 0) {
+                fprintf(stderr, "Error removing original file\n");
+            }
+            if(rename("./temp/removeCharactersTempFile.txt", fileCopyPath) != 0) {
+                fprintf(stderr, "Error renaming temporary file\n");
+            }
+
+        }
+
+    }
+
+
+    return 0;
+
 }
 
 
-int removeCharacters(int argc, char *argv[], char *characterToRemove) {
+int getNextToken() {
 
-    const char *base = strrchr(argv[1], '/');
-    
-    base = base ? base + 1 : argv[1];
 
-    char outputFilePath[256];
 
-    char temporaryFilePath[256];
-    
-    snprintf(outputFilePath, sizeof(outputFilePath), "%s%s", FILE_OUTPUT_PATH, base);
 
-    snprintf(temporaryFilePath, sizeof(temporaryFilePath), "%s%s", FILE_TEMP_PATH, base);
 
-    FILE *file = fopen(outputFilePath, "rb");
-    
-    FILE *temporaryFile = fopen(temporaryFilePath, "wb");
-
-    if (!file || !temporaryFile) 
-        return 1;
-
-    else {
-
-        int c;
-
-        if (strcmp(characterToRemove, "#") == 0) {
-
-            int insideComment = 0;
-
-            while ((c = fgetc(file)) != EOF) {
-
-                if (c == '#') 
-                    insideComment = 1;
-                
-                else if (c == '\n') 
-                    insideComment = 0;
-
-                if (!insideComment) 
-                    fputc(c, temporaryFile);
-
-            }
-
-        } else {
-            
-            while ((c = fgetc(file)) != EOF) {
-    
-                if (c != (unsigned char)characterToRemove[0]) 
-                    fputc(c, temporaryFile);
-    
-            }
-            
-        }
-
-        fclose(file);
-
-        fclose(temporaryFile);
-
-        remove(outputFilePath);
-
-        rename(temporaryFilePath, outputFilePath);
-
-    }
 
     return 0;
 

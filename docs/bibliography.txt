@@ -1,0 +1,6 @@
+https://www.geeksforgeeks.org/c/c-program-to-simulate-nondeterministic-finite-automata-nfa/
+
+https://www.geeksforgeeks.org/c/goto-statement-in-c/
+
+https://www-geeksforgeeks-org.translate.goog/c/strcmp-in-c/?_x_tr_sl=en&_x_tr_tl=pt&_x_tr_hl=pt&_x_tr_pto=tc&_x_tr_hist=true
+
