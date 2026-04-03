@@ -1,6 +1,6 @@
-######################
-#exemplo1
-######################
-#exemplo2
-######################
-#exemplo3
+Identificado na linha 1: ######################
+Identificado na linha 3: #exemplo1
+Identificado na linha 15: ######################
+Identificado na linha 17: #exemplo2
+Identificado na linha 36: ######################
+Identificado na linha 38: #exemplo3

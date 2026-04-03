@@ -311,11 +311,11 @@ int getNextToken() {
 
     FILE *copy = fopen("./output/example-1.txt", "rb");
 
-    FILE *commentariesIdentified = fopen("./output/commentariesIdentified.txt", "ab");
+    FILE *commentariesIdentified = fopen("./output/commentariesIdentified.txt", "w");
 
     if (!copy || !commentariesIdentified) return 1;
 
-    int id = 1;
+    int id = 0;
 
     int i = 0;
 
@@ -324,6 +324,8 @@ int getNextToken() {
     char commentariesBuffer[256];
 
     while ((c = fgetc(copy)) != EOF) {
+
+        if (c == '\n') id++;
 
         // Comments
         goto comments;
@@ -354,8 +356,6 @@ int getNextToken() {
 
             } else {
 
-                //printf("[ AVISO ] Comentário não encontrado!\n");
-
                 goto comment_end;
 
             }
@@ -370,19 +370,24 @@ int getNextToken() {
                 
                 i++;
 
+                
                 goto Q1;
-    
+                
             } else if (c == '\n') {
+                
+                id++;
 
                 commentariesBuffer[i++] = '\n';
 
                 commentariesBuffer[i++] = '\0';
 
-                fputs(commentariesBuffer, commentariesIdentified);
-    
-                printf("[ SUCESSO ] Comentário aceito na linha %d!\n", id);
+                char lineComment[256];
 
-                id++;
+                snprintf(lineComment, sizeof(lineComment), "Identificado na linha %d: %s", id, commentariesBuffer);
+                
+                fputs(lineComment, commentariesIdentified);
+
+                printf("[ SUCESSO ] Comentário aceito na linha %d!\n", id);
 
                 goto comment_end;
                 
