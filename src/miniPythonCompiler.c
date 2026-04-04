@@ -16,6 +16,7 @@
 
 #define FILEPATH_OPERATORS_DEDICATED_FILE "./logs/operatorsIdentified.txt"
 
+#define FILEPATH_DELIMITERS_DEDICATED_FILE "./logs/delimitersIdentified.txt"
 
 typedef struct Token {
     char *type;
@@ -324,7 +325,9 @@ int getNextToken() {
 
     FILE *operatorsIdentified = fopen(FILEPATH_OPERATORS_DEDICATED_FILE, "w");
 
-    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified) return 1;
+    FILE *delimitersIdentified = fopen(FILEPATH_DELIMITERS_DEDICATED_FILE, "w");
+
+    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified || !delimitersIdentified) return 1;
 
     int id = 1;
 
@@ -333,6 +336,8 @@ int getNextToken() {
     int j = 0;
 
     int k = 0;
+
+    int l = 0;
 
     int c;
 
@@ -343,6 +348,8 @@ int getNextToken() {
     char identifiersBuffer[256];
 
     char operatorsBuffer[256];
+
+    char delimitersBuffer[256];
 
     char lookahead[3] = {'\0'};
 
@@ -367,6 +374,19 @@ int getNextToken() {
             c == '!' || 
             c == '~' || 
             c == '%') goto operators;
+        
+        // Delimitadores
+        if (c == '(' ||
+            c == ')' ||
+            c == '{' ||
+            c == '}' ||
+            c == '[' ||
+            c == ']' ||
+            c == ',' ||
+            c == ':' ||
+            c == '.' ||
+            c == ';' ||
+            c == '\"') goto delimiters;
 
         comment_end:
             commentariesBuffer[0] = '\0';
@@ -379,7 +399,10 @@ int getNextToken() {
         operators_end:
             operatorsBuffer[0] = '\0';
             k = 0;
-
+        
+        delimiters_end:
+            delimitersBuffer[0] = '\0';
+            l = 0;
     }
 
     goto end;
@@ -622,6 +645,51 @@ int getNextToken() {
         goto operators_end;
         
     
+    delimiters:
+
+        goto DELIMITERS_Q0;
+
+        DELIMITERS_Q0:
+
+            if (c != EOF && l < sizeof(delimitersBuffer) - 1 &&
+               (c == '(' ||
+                c == ')' ||
+                c == '{' ||
+                c == '}' ||
+                c == '[' ||
+                c == ']' ||
+                c == ',' ||
+                c == ':' ||
+                c == '.' ||
+                c == ';' ||
+                c == '\"')) {
+
+                    goto DELIMITERS_Q1;
+
+            } else {
+
+                goto delimiters_end;
+
+            }
+        
+        DELIMITERS_Q1:
+
+            delimitersBuffer[l] = c;
+
+            l++;
+
+            delimitersBuffer[l] = '\0';
+
+            char lineDelimiter[256];
+
+            snprintf(lineDelimiter, sizeof(lineDelimiter), "Identificado na linha %d: %s\n", id, delimitersBuffer);
+
+            fputs(lineDelimiter, delimitersIdentified);
+
+            printf("[ SUCESSO ] Delimitador aceito na linha %d!\n", id);
+
+            goto delimiters_end;
+
     end:
     i = 0;
     j = 0;
