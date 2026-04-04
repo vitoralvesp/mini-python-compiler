@@ -14,9 +14,7 @@
 
 #define FILEPATH_IDENTIFIERS_DEDICATED_FILE "./output/identifiersIdentified.txt"
 
-
-
-
+#define FILEPATH_OPERATORS_DEDICATED_FILE "./output/operatorsIdentified.txt"
 
 
 typedef struct Token {
@@ -324,7 +322,9 @@ int getNextToken() {
 
     FILE *identifiersIdentified = fopen(FILEPATH_IDENTIFIERS_DEDICATED_FILE, "w");
 
-    if (!copy || !commentariesIdentified || !identifiersIdentified) return 1;
+    FILE *operatorsIdentified = fopen(FILEPATH_OPERATORS_DEDICATED_FILE, "w");
+
+    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified) return 1;
 
     int id = 0;
 
@@ -332,21 +332,41 @@ int getNextToken() {
 
     int j = 0;
 
+    int k = 0;
+
     int c;
+
+    int operator_c;
 
     char commentariesBuffer[256];
 
     char identifiersBuffer[256];
 
+    char operatorsBuffer[256];
+
+    char lookahead[3] = {'\0'};
+
     while ((c = fgetc(copy)) != EOF) {
 
         if (c == '\n') id++;
 
-        // Comments
+        // Comentários
         if (c == '#') goto comments;
 
-        // Identifiers
+        // Identificadores
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') goto identifiers;
+
+        // Operadores
+        if (c == '+' || 
+            c == '-' ||
+            c == '*' || 
+            c == '/' || 
+            c == '=' || 
+            c == '>' || 
+            c == '<' || 
+            c == '!' || 
+            c == '~' || 
+            c == '%') goto operators;
 
         comment_end:
             commentariesBuffer[0] = '\0';
@@ -355,6 +375,10 @@ int getNextToken() {
         identifier_end:
             identifiersBuffer[0] = '\0';
             j = 0;
+
+        operators_end:
+            operatorsBuffer[0] = '\0';
+            k = 0;
 
     }
 
@@ -391,7 +415,6 @@ int getNextToken() {
                 c = fgetc(copy);
                 
                 i++;
-
                 
                 goto COMMENTARY_Q1;
                 
@@ -471,7 +494,128 @@ int getNextToken() {
                     
                 }
 
+    operators:
+
+        int next = 0;
+
+        goto OPERATORS_Q0;
+
+        OPERATORS_Q0:
+                
+            if (c != EOF && k < sizeof(operatorsBuffer) - 1 &&
+                c == '+' ||
+                c == '-' ||
+                c == '/' ||
+                c == '%' ||
+                c == '~') {
+
+                    operatorsBuffer[k] = c;
+
+                    k++;
+
+                    char lineOperator[256];
+
+                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+
+                    fputs(lineOperator, operatorsIdentified);
+
+                    printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
+
+                    goto operators_end;
+
+            } else if (c == '>' || c == '<' || c == '=' || c == '!') {
+
+                next = fgetc(copy);
+
+                if (next == '=') {
+
+                    operatorsBuffer[0] = c;
             
+                    goto OPERATORS_Q2;
+            
+                } else {
+            
+                    operatorsBuffer[0] = c;
+            
+                    operatorsBuffer[1] = '\0';
+            
+                    ungetc(next, copy);
+
+                    operatorsBuffer[k] = c;
+
+                    k++;
+
+                    char lineOperator[256];
+
+                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+
+                    fputs(lineOperator, operatorsIdentified);
+
+                    printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
+
+                    goto operators_end;
+            
+                }
+
+            } else if (c == '*') {
+
+                next = fgetc(copy);
+
+                if (next == '*') {
+
+                    operatorsBuffer[0] = c;
+
+                    goto OPERATORS_Q2;
+
+                } else {
+
+                    operatorsBuffer[0] = c;
+
+                    operatorsBuffer[1] = '\0';
+
+                    ungetc(next, copy);
+
+                    operatorsBuffer[k] = c;
+
+                    k++;
+
+                    char lineOperator[256];
+
+                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+
+                    fputs(lineOperator, operatorsIdentified);
+
+                    printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
+
+                    goto operators_end;
+
+                }
+
+            }
+
+    OPERATORS_Q2:
+
+        operatorsBuffer[1] = next;
+
+        operatorsBuffer[2] = '\0';
+
+        ungetc(next, copy);
+
+        operatorsBuffer[k] = c;
+
+        k++;
+
+        char lineOperator[256];
+
+        snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+
+        fputs(lineOperator, operatorsIdentified);
+
+        printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
+
+        goto operators_end;
+        
+    
     end:
     i = 0;
     j = 0;
