@@ -482,6 +482,8 @@ int getNextToken() {
                     
                     identifiersBuffer[j] = '\0';
 
+                    if (c != EOF) ungetc(c, copy);
+
                     char lineIdentifier[256];
 
                     snprintf(lineIdentifier, sizeof(lineIdentifier), "Identificado na linha %d: %s\n", id, identifiersBuffer);
@@ -503,11 +505,11 @@ int getNextToken() {
         OPERATORS_Q0:
                 
             if (c != EOF && k < sizeof(operatorsBuffer) - 1 &&
-                c == '+' ||
+               (c == '+' ||
                 c == '-' ||
                 c == '/' ||
                 c == '%' ||
-                c == '~') {
+                c == '~')) {
 
                     operatorsBuffer[k] = c;
 
