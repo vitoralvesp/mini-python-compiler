@@ -18,7 +18,10 @@
 
 #define FILEPATH_DELIMITERS_DEDICATED_FILE "./logs/delimitersIdentified.txt"
 
+#define TOKENS_DEDICATED_FILE "./logs/tokensIdentified.txt"
+
 typedef struct Token {
+    int id;
     char *type;
     char *value;
 } Token;
@@ -29,6 +32,18 @@ typedef struct SymbolTable {
     char *type[256];
 
 } SymbolTable;
+
+Token *CurrentToken;
+
+int id = 1;
+
+int i = 0;
+
+int j = 0;
+
+int k = 0;
+
+int l = 0;
 
 /** @brief Recebe o arquivo de entrada e procede para validá-lo, retornando 0 se for válido e 1 caso contrário.
  *  @param argc número de parâmetros recebidos na linha de comando.
@@ -54,11 +69,13 @@ int removeCharacters(char *fileCopyPath, char characterToRemove);
 
 int slice(char *newString, char *string, char caracterToLookFor, int length);
 
-int getNextToken();
+Token *getNextToken(FILE *copy);
 
 int insertTokenIntoSymbolTable(Token token, SymbolTable *symbolTable);
 
 int fillSymbolTable();
+
+int clearFile(const char *filePath);
 
 int main(int argc, char *argv[]) {
 
@@ -106,7 +123,29 @@ int main(int argc, char *argv[]) {
 
     printf("Caminho do arquivo copiado: %s\n", fileCopyPath);
 
-    int didFillSymbolTableSucceed = fillSymbolTable();
+    CurrentToken = (Token *)malloc(sizeof(Token));
+
+    copy = fopen("./output/example-1.txt", "rb");
+
+    clearFile(FILEPATH_COMMENTARIES_DEDICATED_FILE);
+
+    clearFile(FILEPATH_IDENTIFIERS_DEDICATED_FILE);
+
+    clearFile(FILEPATH_OPERATORS_DEDICATED_FILE);
+
+    clearFile(FILEPATH_DELIMITERS_DEDICATED_FILE);
+
+    clearFile(TOKENS_DEDICATED_FILE);
+
+    while (1) {
+        
+        Token *t = getNextToken(copy);
+        
+        if (t == NULL) break;
+    
+    }
+
+    fclose(copy);
 
     int didCommentsRemovalProcessSucceed = removeCharacters(fileCopyPath, '#');
     
@@ -189,6 +228,17 @@ int readFile(int argc, char *argv[]) {
     return result;
 }
 
+int clearFile(const char *filePath) {
+    FILE *file = fopen(filePath, "w");
+
+    if (!file) {
+        perror("Erro ao limpar o arquivo");
+        return 1;
+    }
+
+    fclose(file);
+    return 0;
+}
 
 FILE *createFileCopy(int argc, char *argv[]) {
 
@@ -315,31 +365,21 @@ int removeCharacters(char *fileCopyPath, char characterToRemove) {
 
 }
 
-int getNextToken() {
+Token *getNextToken(FILE *copy) {
 
-    FILE *copy = fopen("./output/example-1.txt", "rb");
+    FILE *commentariesIdentified = fopen(FILEPATH_COMMENTARIES_DEDICATED_FILE, "a");
 
-    FILE *commentariesIdentified = fopen(FILEPATH_COMMENTARIES_DEDICATED_FILE, "w");
+    FILE *identifiersIdentified = fopen(FILEPATH_IDENTIFIERS_DEDICATED_FILE, "a");
 
-    FILE *identifiersIdentified = fopen(FILEPATH_IDENTIFIERS_DEDICATED_FILE, "w");
+    FILE *operatorsIdentified = fopen(FILEPATH_OPERATORS_DEDICATED_FILE, "a");
 
-    FILE *operatorsIdentified = fopen(FILEPATH_OPERATORS_DEDICATED_FILE, "w");
+    FILE *delimitersIdentified = fopen(FILEPATH_DELIMITERS_DEDICATED_FILE, "a");
 
-    FILE *delimitersIdentified = fopen(FILEPATH_DELIMITERS_DEDICATED_FILE, "w");
+    FILE *tokensIdentified = fopen(TOKENS_DEDICATED_FILE, "a");
 
-    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified || !delimitersIdentified) return 1;
+    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified || !delimitersIdentified || !tokensIdentified) return NULL;
 
-    int id = 1;
-
-    int i = 0;
-
-    int j = 0;
-
-    int k = 0;
-
-    int l = 0;
-
-    int c;
+    Token *token = (Token *)malloc(sizeof(Token));
 
     int operator_c;
 
@@ -353,16 +393,42 @@ int getNextToken() {
 
     char lookahead[3] = {'\0'};
 
-    while ((c = fgetc(copy)) != EOF) {
+    int c = fgetc(copy);
+
+    if (c == EOF) return NULL;
+
+    while (c == ' ' || c == '\n' || c == '\t') {
+
+        if (c == '\n') id++;
+        
+        c = fgetc(copy);
+        
+        if (c == EOF) return NULL;
+    
+    } 
+
+    if (c != EOF) {
 
         if (c == '\n') id++;
 
         // Comentários
-        if (c == '#') goto comments;
-
+        if (c == '#') {
+            
+            token->type = "COMMENTARY";
+            
+            goto comments;
+            
+        }
+        
         // Identificadores
-        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') goto identifiers;
-
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+            
+            token->type = "IDENTIFIER";
+            
+            goto identifiers;
+            
+        }
+        
         // Operadores
         if (c == '+' || 
             c == '-' ||
@@ -373,38 +439,51 @@ int getNextToken() {
             c == '<' || 
             c == '!' || 
             c == '~' || 
-            c == '%') goto operators;
-        
-        // Delimitadores
-        if (c == '(' ||
-            c == ')' ||
-            c == '{' ||
-            c == '}' ||
-            c == '[' ||
-            c == ']' ||
-            c == ',' ||
-            c == ':' ||
-            c == '.' ||
-            c == ';' ||
-            c == '\"') goto delimiters;
+            c == '%') {
+            
+                token->type = "OPERATOR";
 
-        comment_end:
-            commentariesBuffer[0] = '\0';
-            i = 0;
-        
-        identifier_end:
-            identifiersBuffer[0] = '\0';
-            j = 0;
+                goto operators;
+            
+            }
 
-        operators_end:
-            operatorsBuffer[0] = '\0';
-            k = 0;
-        
-        delimiters_end:
-            delimitersBuffer[0] = '\0';
-            l = 0;
-    }
+            // Delimitadores
+            if (c == '(' ||
+                c == ')' ||
+                c == '{' ||
+                c == '}' ||
+                c == '[' ||
+                c == ']' ||
+                c == ',' ||
+                c == ':' ||
+                c == '.' ||
+                c == ';' ||
+                c == '\"') {
+                    
+                    token->type = "DELIMITER";
 
+                    goto delimiters;
+                
+                }
+
+                comment_end:
+                commentariesBuffer[0] = '\0';
+                i = 0;
+                
+                identifier_end:
+                identifiersBuffer[0] = '\0';
+                j = 0;
+                
+                operators_end:
+                operatorsBuffer[0] = '\0';
+                k = 0;
+                
+                delimiters_end:
+                delimitersBuffer[0] = '\0';
+                l = 0;
+
+            } 
+            
     goto end;
 
     comments:
@@ -444,14 +523,25 @@ int getNextToken() {
             } else if (c == '\n') {
                 
                 id++;
-
+                
                 commentariesBuffer[i++] = '\n';
-
+                
                 commentariesBuffer[i++] = '\0';
+                
+                token->id = id;
+
+                token->value = strdup(commentariesBuffer);
+
+                char *newline = strchr(token->value, '\n');
+                
+                if (newline) *newline = '\0';
+
+                fprintf(tokensIdentified, "<%s>\n", token->value);
 
                 char lineComment[256];
 
                 snprintf(lineComment, sizeof(lineComment), "Identificado na linha %d: %s", id, commentariesBuffer);
+
                 
                 fputs(lineComment, commentariesIdentified);
 
@@ -507,6 +597,12 @@ int getNextToken() {
 
                     if (c != EOF) ungetc(c, copy);
 
+                    token->id = id;
+
+                    token->value = strdup(identifiersBuffer);
+
+                    fprintf(tokensIdentified, "<%d, %s>\n", token->id, token->value);
+
                     char lineIdentifier[256];
 
                     snprintf(lineIdentifier, sizeof(lineIdentifier), "Identificado na linha %d: %s\n", id, identifiersBuffer);
@@ -540,6 +636,12 @@ int getNextToken() {
 
                     operatorsBuffer[k] = '\0';
 
+                    token->id = id;
+
+                    token->value = strdup(operatorsBuffer);
+
+                    fprintf(tokensIdentified, "<%s>\n", token->value);
+
                     char lineOperator[256];
 
                     snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
@@ -569,6 +671,12 @@ int getNextToken() {
                     ungetc(next, copy);
 
                     operatorsBuffer[k] = c;
+
+                    token->id = id;
+
+                    token->value = strdup(operatorsBuffer);
+
+                    fprintf(tokensIdentified, "<%s>\n", token->value);
 
                     k++;
 
@@ -604,6 +712,12 @@ int getNextToken() {
 
                     operatorsBuffer[k] = c;
 
+                    token->id = id;
+
+                    token->value = strdup(operatorsBuffer);
+
+                    fprintf(tokensIdentified, "<%s>\n", token->value);
+
                     k++;
 
                     operatorsBuffer[k] = '\0';
@@ -631,6 +745,12 @@ int getNextToken() {
         ungetc(next, copy);
 
         operatorsBuffer[k] = c;
+
+        token->id = id;
+
+        token->value = strdup(operatorsBuffer);
+
+        fprintf(tokensIdentified, "<%s>\n", token->value);
 
         k++;
 
@@ -680,6 +800,12 @@ int getNextToken() {
 
             delimitersBuffer[l] = '\0';
 
+            token->id = id;
+
+            token->value = strdup(delimitersBuffer);
+
+            fprintf(tokensIdentified, "<%s>\n", token->value);
+
             char lineDelimiter[256];
 
             snprintf(lineDelimiter, sizeof(lineDelimiter), "Identificado na linha %d: %s\n", id, delimitersBuffer);
@@ -694,17 +820,21 @@ int getNextToken() {
     i = 0;
     j = 0;
     k = 0;
+    l = 0;
 
-    fclose(copy);
     fclose(commentariesIdentified);
+    fclose(identifiersIdentified);
+    fclose(operatorsIdentified);
+    fclose(delimitersIdentified);
+    fclose(tokensIdentified);
 
-    return 0;
+    return token;
     
 }
 
 int fillSymbolTable() {
 
-    getNextToken();
+    //getNextToken();
 
     return 0;
 
