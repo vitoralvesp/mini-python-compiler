@@ -10,11 +10,11 @@
 
 #define FILE_TEMP_PATH "../temp/"
 
-#define FILEPATH_COMMENTARIES_DEDICATED_FILE "./output/commentariesIdentified.txt"
+#define FILEPATH_COMMENTARIES_DEDICATED_FILE "./logs/commentariesIdentified.txt"
 
-#define FILEPATH_IDENTIFIERS_DEDICATED_FILE "./output/identifiersIdentified.txt"
+#define FILEPATH_IDENTIFIERS_DEDICATED_FILE "./logs/identifiersIdentified.txt"
 
-#define FILEPATH_OPERATORS_DEDICATED_FILE "./output/operatorsIdentified.txt"
+#define FILEPATH_OPERATORS_DEDICATED_FILE "./logs/operatorsIdentified.txt"
 
 
 typedef struct Token {
@@ -326,7 +326,7 @@ int getNextToken() {
 
     if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified) return 1;
 
-    int id = 0;
+    int id = 1;
 
     int i = 0;
 
@@ -515,6 +515,8 @@ int getNextToken() {
 
                     k++;
 
+                    operatorsBuffer[k] = '\0';
+
                     char lineOperator[256];
 
                     snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
@@ -581,6 +583,8 @@ int getNextToken() {
 
                     k++;
 
+                    operatorsBuffer[k] = '\0';
+
                     char lineOperator[256];
 
                     snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
@@ -621,6 +625,7 @@ int getNextToken() {
     end:
     i = 0;
     j = 0;
+    k = 0;
 
     fclose(copy);
     fclose(commentariesIdentified);
