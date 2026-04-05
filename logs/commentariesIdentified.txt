@@ -1,6 +1,0 @@
-Identificado na linha 2: ######################
-Identificado na linha 4: #exemplo1
-Identificado na linha 16: ######################
-Identificado na linha 18: #exemplo2
-Identificado na linha 37: ######################
-Identificado na linha 39: #exemplo3

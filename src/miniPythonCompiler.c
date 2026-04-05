@@ -24,6 +24,8 @@
 
 #define LEXYCAL_ERRORS_DEDICATED_FILE "./logs/lexycalErrorsIdentified.txt"
 
+#define SINTATIC_ERRORS_DEDICATED_FILE "./logs/sintaticErrorsIdentified.txt"
+
 typedef struct Token {
     int id;
     char *type;
@@ -43,7 +45,13 @@ typedef struct IdentifiedErrors {
     char *errorMessage;
 } IdentifiedErrors;
 
-Token *CurrentToken;
+typedef struct ASTNode {
+    Token token;
+    struct ASTNode *left;
+    struct ASTNode *right;
+} ASTNode;
+
+// GLOBAL
 
 int id = 1;
 
@@ -57,7 +65,13 @@ int l = 0;
 
 int m = 0;
 
+Token *CurrentToken;
+
+Token *LookaheadToken;
+
 IdentifiedErrors *identifiedErrors;
+
+FILE *sintaticErrorsIdentified;
 
 int findClosureCharacter(char *string, char characterToLookFor, int length);
 
@@ -96,6 +110,52 @@ int printSymbolTable(SymbolTable *symbolTable);
 int clearFile(const char *filePath);
 
 int isValidChar(char c);
+
+int insertNodeIntoAST(ASTNode node);
+
+ASTNode *createASTNode(Token token, ASTNode *left, ASTNode *right);
+
+ASTNode *parseExpression(FILE *file);
+
+ASTNode *parseTermPrimary(FILE *file);
+
+ASTNode *parseTermSecondary(FILE *file);
+
+ASTNode *parseFactor(FILE *file);
+
+ASTNode *parseUnary(FILE *file);
+
+ASTNode *parsePowerPrimary(FILE *file);
+
+ASTNode *parsePowerSecondary(FILE *file);
+
+ASTNode *parseArithmeticExpressionPrimary(FILE *file);
+
+ASTNode *parseArithmeticExpressionSecondary(FILE *file);
+
+ASTNode *parseRelationalOperation(FILE *file);
+
+int isRelOp(Token token);
+
+ASTNode *parseFactor(FILE *file);
+
+ASTNode *parseUnary(FILE *file);
+
+ASTNode *parsePower(FILE *file);
+
+ASTNode *parseTerm(FILE *file);
+
+ASTNode *parseArithExpr(FILE *file);
+
+ASTNode *parseRelExpr(FILE *file);
+
+ASTNode *parseNotExpr(FILE *file);
+
+ASTNode *parseAndExpr(FILE *file);
+
+ASTNode *parseOrExpr(FILE *file);
+
+ASTNode *parseExpression(FILE *file);
 
 
 int main(int argc, char *argv[]) {
@@ -178,6 +238,49 @@ int main(int argc, char *argv[]) {
 
     fclose(copy);
 
+    puts("[ SUCESSO ] Prosseguindo para a análise léxica!");
+
+    printf("\n");
+
+    printSymbolTable(symbolTable);
+
+    printf("\n");
+
+    puts("[ SUCESSO ] Análise léxica concluída com sucesso!");
+
+    puts("[ SUCESSO ] Prosseguindo para a análise sintática!");
+
+    copy = fopen(fileCopyPath, "rb");
+
+    id = 0;
+
+    sintaticErrorsIdentified = fopen(SINTATIC_ERRORS_DEDICATED_FILE, "a");
+
+    if (copy == NULL || sintaticErrorsIdentified == NULL) {
+        printf("Erro ao abrir arquivo\n");
+        return 1;
+    }
+
+    CurrentToken = getNextToken(copy);
+
+    if (CurrentToken == NULL) {
+        printf("Erro: arquivo vazio\n");
+        return 1;
+    }
+
+    ASTNode *root = parseExpression(copy);
+
+    if (CurrentToken != NULL) {
+        printf("Erro sintático: tokens restantes\n");
+        printf("Token restante: %s\n", CurrentToken->value);
+    }
+
+    printf("[ SUCESSO ] Análise sintática concluída!\n");
+
+    fclose(copy);
+
+    fclose(sintaticErrorsIdentified);
+
     int didCommentsRemovalProcessSucceed = removeCharacters(fileCopyPath, '#');
     
     int didTabsRemovalProcessSucceed = removeCharacters(fileCopyPath, '\t');
@@ -234,13 +337,9 @@ int main(int argc, char *argv[]) {
 
     } else {
 
-        puts("[ SUCESSO ] Prosseguindo para a análise léxica!");
+        // puts("[ SUCESSO ] Prosseguindo para a análise léxica!");
     
     }
-
-    printf("\n");
-    
-    printSymbolTable(symbolTable);
 
     return 0;
 }
@@ -538,11 +637,12 @@ Token *getNextToken(FILE *copy) {
 
                     goto end;
                 }
-
                 
                 ungetc(buffer[1], copy);
                 
                 c = buffer[0];
+
+                token->type = "NUMBER";
                 
                 goto numbers;
             
@@ -1316,4 +1416,203 @@ int printSymbolTable(SymbolTable *symbolTable) {
     }
 
     return 0;
+}
+
+ASTNode *createASTNode(Token token, ASTNode *left, ASTNode *right) {
+    
+    ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
+    
+    node->token = token;
+    
+    node->left = left;
+    
+    node->right = right;
+    
+    return node;
+
+}
+
+int isRelOp(Token token) {
+    return strcmp(token.value, "<") == 0 ||
+           strcmp(token.value, ">") == 0 ||
+           strcmp(token.value, "==") == 0 ||
+           strcmp(token.value, "!=") == 0 ||
+           strcmp(token.value, "<=") == 0 ||
+           strcmp(token.value, ">=") == 0 ||
+           strcmp(token.value, "<>") == 0 ||
+           strcmp(token.value, "in") == 0 ||
+           strcmp(token.value, "is") == 0;
+}
+
+ASTNode *parseFactor(FILE *file) {
+
+    Token token = *CurrentToken;
+
+    if (strcmp(token.type, "NUMBER") == 0 ||
+        strcmp(token.type, "IDENTIFIER") == 0) {
+
+        CurrentToken = getNextToken(file);
+        return createASTNode(token, NULL, NULL);
+    }
+
+    if (strcmp(token.value, "(") == 0) {
+
+        CurrentToken = getNextToken(file);
+
+        ASTNode *node = parseExpression(file);
+
+        if (CurrentToken == NULL || strcmp(CurrentToken->value, ")") != 0) {
+            // printf("Erro sintático: esperado ')'\n");
+            
+            char lineError[256];
+
+            snprintf(lineError, sizeof(lineError), "Erro sintático na linha %d: esperado ')'\n", id);
+
+            fputs(lineError, sintaticErrorsIdentified);
+
+            return NULL;
+        }
+
+        CurrentToken = getNextToken(file);
+        return node;
+    }
+
+}
+
+ASTNode *parseUnary(FILE *file) {
+
+    Token token = *CurrentToken;
+
+    if (strcmp(token.value, "+") == 0 ||
+        strcmp(token.value, "-") == 0 ||
+        strcmp(token.value, "~") == 0) {
+
+        CurrentToken = getNextToken(file);
+
+        ASTNode *child = parseUnary(file);
+        return createASTNode(token, NULL, child);
+    }
+
+    return parseFactor(file);
+}
+
+ASTNode *parsePower(FILE *file) {
+
+    ASTNode *left = parseUnary(file);
+
+    if (CurrentToken != NULL && strcmp(CurrentToken->value, "**") == 0) {
+
+        Token op = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        ASTNode *right = parsePower(file);
+
+        return createASTNode(op, left, right);
+    }
+
+    return left;
+}
+
+ASTNode *parseTerm(FILE *file) {
+
+    ASTNode *node = parsePower(file);
+
+    while (CurrentToken != NULL &&
+          (strcmp(CurrentToken->value, "*") == 0 ||
+           strcmp(CurrentToken->value, "/") == 0 ||
+           strcmp(CurrentToken->value, "%") == 0)) {
+
+        Token op = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        ASTNode *right = parsePower(file);
+        node = createASTNode(op, node, right);
+    }
+
+    return node;
+}
+
+ASTNode *parseArithExpr(FILE *file) {
+
+    ASTNode *node = parseTerm(file);
+
+    while (CurrentToken != NULL &&
+          (strcmp(CurrentToken->value, "+") == 0 ||
+           strcmp(CurrentToken->value, "-") == 0)) {
+
+        Token op = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        ASTNode *right = parseTerm(file);
+        node = createASTNode(op, node, right);
+    }
+
+    return node;
+}
+
+ASTNode *parseRelExpr(FILE *file) {
+
+    ASTNode *node = parseArithExpr(file);
+
+    while (CurrentToken != NULL && isRelOp(*CurrentToken)) {
+
+        Token op = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        ASTNode *right = parseArithExpr(file);
+        node = createASTNode(op, node, right);
+    }
+
+    return node;
+}
+
+ASTNode *parseNotExpr(FILE *file) {
+
+    if (CurrentToken != NULL && strcmp(CurrentToken->value, "not") == 0) {
+
+        Token op = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        ASTNode *child = parseNotExpr(file);
+
+        return createASTNode(op, NULL, child);
+    }
+
+    return parseRelExpr(file);
+}
+
+ASTNode *parseAndExpr(FILE *file) {
+
+    ASTNode *node = parseNotExpr(file);
+
+    while (CurrentToken != NULL && strcmp(CurrentToken->value, "and") == 0) {
+
+        Token op = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        ASTNode *right = parseNotExpr(file);
+        node = createASTNode(op, node, right);
+    }
+
+    return node;
+}
+
+ASTNode *parseOrExpr(FILE *file) {
+
+    ASTNode *node = parseAndExpr(file);
+
+    while (CurrentToken != NULL && strcmp(CurrentToken->value, "or") == 0) {
+
+        Token op = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        ASTNode *right = parseAndExpr(file);
+        node = createASTNode(op, node, right);
+    }
+
+    return node;
+}
+
+ASTNode *parseExpression(FILE *file) {
+    return parseOrExpr(file);
 }
