@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <wctype.h>
 
 // ******************************************************
 // ETAPA 0: RECEBIMENTO DO ARQUIVO 
@@ -20,6 +22,8 @@
 
 #define TOKENS_DEDICATED_FILE "./logs/tokensIdentified.txt"
 
+#define LEXYCAL_ERRORS_DEDICATED_FILE "./logs/lexycalErrorsIdentified.txt"
+
 typedef struct Token {
     int id;
     char *type;
@@ -33,6 +37,12 @@ typedef struct SymbolTable {
 
 } SymbolTable;
 
+typedef struct IdentifiedErrors {
+    int *id;
+    char *errorType;
+    char *errorMessage;
+} IdentifiedErrors;
+
 Token *CurrentToken;
 
 int id = 1;
@@ -44,6 +54,12 @@ int j = 0;
 int k = 0;
 
 int l = 0;
+
+int m = 0;
+
+IdentifiedErrors *identifiedErrors;
+
+int findClosureCharacter(char *string, char characterToLookFor, int length);
 
 /** @brief Recebe o arquivo de entrada e procede para validá-lo, retornando 0 se for válido e 1 caso contrário.
  *  @param argc número de parâmetros recebidos na linha de comando.
@@ -77,6 +93,8 @@ int fillSymbolTable();
 
 int clearFile(const char *filePath);
 
+int isValidChar(char c);
+
 int main(int argc, char *argv[]) {
 
     if (readFile(argc, argv) != 0) {
@@ -109,6 +127,10 @@ int main(int argc, char *argv[]) {
 
     char fileName[256];
 
+    identifiedErrors = (IdentifiedErrors *)malloc(sizeof(IdentifiedErrors));
+
+    identifiedErrors->errorType = "LEXYCAL";
+
     int result = slice(fileName, argv[1], '/', strlen(argv[1]));
 
     snprintf(fileCopyPath, sizeof(fileCopyPath), "%s%s", FILE_OUTPUT_PATH, fileName);
@@ -125,7 +147,7 @@ int main(int argc, char *argv[]) {
 
     CurrentToken = (Token *)malloc(sizeof(Token));
 
-    copy = fopen("./output/example-1.txt", "rb");
+    copy = fopen(fileCopyPath, "rb");
 
     clearFile(FILEPATH_COMMENTARIES_DEDICATED_FILE);
 
@@ -136,6 +158,8 @@ int main(int argc, char *argv[]) {
     clearFile(FILEPATH_DELIMITERS_DEDICATED_FILE);
 
     clearFile(TOKENS_DEDICATED_FILE);
+
+    clearFile(LEXYCAL_ERRORS_DEDICATED_FILE);
 
     while (1) {
         
@@ -228,6 +252,40 @@ int readFile(int argc, char *argv[]) {
     return result;
 }
 
+int isValidChar(char c) {
+    return iswalpha(c) || 
+           iswdigit(c) ||
+           c == '_' ||
+           c == '#' || 
+           c == '+' || 
+           c == '-' || 
+           c == '*' || 
+           c == '/' || 
+           c == '~' || 
+           c == '%' || 
+           c == '=' || 
+           c == '<' || 
+           c == '>' || 
+           c == '!' ||
+           c == '(' || 
+           c == ')' || 
+           c == '{' || 
+           c == '}' ||
+           c == '[' || 
+           c == ']' ||
+           c == ',' || 
+           c == ';' || 
+           c == ':' || 
+           c == '.' ||
+           c == '\"'||
+           c == '\''||
+           c == ' ' ||
+           c == '\t'||
+           c == '\n'||
+           c == '\0' ||
+           (c & 0x80);
+}
+
 int clearFile(const char *filePath) {
     FILE *file = fopen(filePath, "w");
 
@@ -248,7 +306,7 @@ FILE *createFileCopy(int argc, char *argv[]) {
 
     char outputFilePath[256];
     
-    snprintf(outputFilePath, sizeof(outputFilePath), "%s%s", FILE_OUTPUT_PATH, base);
+    snprintf(outputFilePath, sizeof(outputFilePath), "%s%s", FILE_OUTPUT_PATH, argv[1] + strlen("input/"));
 
     FILE *file = fopen(argv[1], "rb");
 
@@ -278,6 +336,20 @@ FILE *createFileCopy(int argc, char *argv[]) {
     fclose(copy);
     
     return copy;
+}
+
+int findClosureCharacter(char *string, char characterToLookFor, int length) {
+
+    for (int i = 0; i < length; i++) {
+
+        if (string[i] == characterToLookFor) {
+            return 0;
+        }
+
+    }
+
+    return 1;
+
 }
 
 int slice(char *newString, char *string, char characterToLookFor, int length) {
@@ -316,6 +388,7 @@ int removeCharacters(char *fileCopyPath, char characterToRemove) {
     FILE *copy = fopen(fileCopyPath, "rb");
 
     if (!copy) {
+        
         return 1;
 
     } else {
@@ -323,7 +396,9 @@ int removeCharacters(char *fileCopyPath, char characterToRemove) {
         FILE *tempFile = fopen("./temp/removeCharactersTempFile.txt", "wb");
 
         if (!tempFile) {
+
             fclose(copy);
+            
             return 1;
         
         } else {
@@ -360,7 +435,6 @@ int removeCharacters(char *fileCopyPath, char characterToRemove) {
 
     }
 
-
     return 0;
 
 }
@@ -377,7 +451,9 @@ Token *getNextToken(FILE *copy) {
 
     FILE *tokensIdentified = fopen(TOKENS_DEDICATED_FILE, "a");
 
-    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified || !delimitersIdentified || !tokensIdentified) return NULL;
+    FILE *lexycalErrorsIdentified = fopen(LEXYCAL_ERRORS_DEDICATED_FILE, "a");
+
+    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified || !delimitersIdentified || !tokensIdentified || !lexycalErrorsIdentified) return NULL;
 
     Token *token = (Token *)malloc(sizeof(Token));
 
@@ -391,7 +467,7 @@ Token *getNextToken(FILE *copy) {
 
     char delimitersBuffer[256];
 
-    char lookahead[3] = {'\0'};
+    char numberBuffer[256];
 
     int c = fgetc(copy);
 
@@ -411,22 +487,56 @@ Token *getNextToken(FILE *copy) {
 
         if (c == '\n') id++;
 
-        // Comentários
-        if (c == '#') {
-            
-            token->type = "COMMENTARY";
-            
-            goto comments;
-            
+        if (isdigit(c)) {
+
+            goto numbers;
+
         }
         
         // Identificadores
-        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
-            
-            token->type = "IDENTIFIER";
-            
+        if (isdigit(c) || isalpha(c) || c == '_') {
+
+            char buffer[256];
+            int idx = 0;
+
+            buffer[idx++] = c;
+
+            int next = fgetc(copy);
+
+            int isInvalid = 0;
+
+            while (next != EOF) {
+                if (isalnum(next) || next == '_') {
+                    buffer[idx++] = next;
+                } else if (next == '#') {
+                    buffer[idx++] = next;
+                    isInvalid = 1;
+                } else {
+                    break;
+                }
+                next = fgetc(copy);
+            }
+
+            buffer[idx] = '\0';
+
+            if (next != EOF) ungetc(next, copy);
+
+            int hasLetter = 0;
+
+            if (isInvalid) {
+                
+                char lineError[256];
+
+                snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: identificador inválido '%s'\n", id, buffer);
+
+                fputs(lineError, lexycalErrorsIdentified);
+                printf("[ ERRO ] %s", lineError);
+            }
+
+            //return token;
+
             goto identifiers;
-            
+
         }
         
         // Operadores
@@ -440,6 +550,48 @@ Token *getNextToken(FILE *copy) {
             c == '!' || 
             c == '~' || 
             c == '%') {
+
+                if (c == '/') {
+                    int next = fgetc(copy);
+
+                    if (next == '*') {
+
+                        char buffer[256];
+                        int idx = 0;
+
+                        buffer[idx++] = '/';
+                        buffer[idx++] = '*';
+
+                        while ((c = fgetc(copy)) != EOF) {
+                            buffer[idx++] = c;
+
+                            if (c == '*') {
+                                int next2 = fgetc(copy);
+                                if (next2 == '/') {
+                                    buffer[idx++] = next2;
+                                    break;
+                                }
+                                ungetc(next2, copy);
+                            }
+                        }
+
+                        buffer[idx] = '\0';
+
+                        char lineError[512];
+
+                        snprintf(lineError, sizeof(lineError),
+                            "Erro léxico na linha %d: comentário inválido '%s'\n",
+                            id, buffer);
+
+                        fputs(lineError, lexycalErrorsIdentified);
+                        printf("[ ERRO ] %s", lineError);
+
+                        goto operators_end;
+                    }
+
+                    ungetc(next, copy);
+
+                }
             
                 token->type = "OPERATOR";
 
@@ -459,6 +611,80 @@ Token *getNextToken(FILE *copy) {
                 c == '.' ||
                 c == ';' ||
                 c == '\"') {
+
+                    int isClosureValid = 0;
+
+                    if (c == '(') {
+
+                        isClosureValid = findClosureCharacter(delimitersBuffer, ')', sizeof(delimitersBuffer));
+
+                        if (!isClosureValid) {
+
+                            char lineError[256];
+
+                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento ] esperado para o delimitador de abertura [\n", id);
+
+                            fputs(lineError, lexycalErrorsIdentified);
+
+                            //printf("[ ERRO ] %s", lineError);   
+
+                        }
+
+                    }
+
+                    if (c == '{') {
+
+                        isClosureValid = findClosureCharacter(delimitersBuffer, '}', sizeof(delimitersBuffer));
+
+                        if (!isClosureValid) {
+
+                            char lineError[256];
+
+                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento } esperado para o delimitador de abertura {\n", id);
+
+                            fputs(lineError, lexycalErrorsIdentified);
+
+                            //printf("[ ERRO ] %s", lineError);   
+
+                        }
+
+                    }
+
+                    if (c == '\'') {
+
+                        isClosureValid = findClosureCharacter(delimitersBuffer, '\'', sizeof(delimitersBuffer));
+
+                        if (!isClosureValid) {
+
+                            char lineError[256];
+
+                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento \' esperado para o delimitador de abertura \'\n", id);
+
+                            fputs(lineError, lexycalErrorsIdentified);
+
+                            //printf("[ ERRO ] %s", lineError);   
+
+                        }
+
+                    }
+
+                    if (c == '\"') {
+
+                        isClosureValid = findClosureCharacter(delimitersBuffer, '\"', sizeof(delimitersBuffer));
+
+                        if (!isClosureValid) {
+
+                            char lineError[256];
+
+                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento \" esperado para o delimitador de abertura \"\n", id);
+
+                            fputs(lineError, lexycalErrorsIdentified);
+
+                            //printf("[ ERRO ] %s", lineError);   
+
+                        }
+
+                    }
                     
                     token->type = "DELIMITER";
 
@@ -466,25 +692,176 @@ Token *getNextToken(FILE *copy) {
                 
                 }
 
-                comment_end:
-                commentariesBuffer[0] = '\0';
-                i = 0;
-                
-                identifier_end:
-                identifiersBuffer[0] = '\0';
-                j = 0;
-                
-                operators_end:
-                operatorsBuffer[0] = '\0';
-                k = 0;
-                
-                delimiters_end:
-                delimitersBuffer[0] = '\0';
-                l = 0;
+            }
 
-            } 
+            // Comentários
+            if (c == '#') {
+                
+                token->type = "COMMENTARY";
+                
+                goto comments;
+                
+            }
+
+            if (!isValidChar(c)) {
+
+                    char lineError[256];
+
+                    snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: caractere inválido %c\n", id, c);
+
+                    fputs(lineError, lexycalErrorsIdentified);
+
+                    //printf("[ ERRO ] %s", lineError);   
+                
+            }
+
+            numbers_end:
+            numberBuffer[0] = '\0';
+            m = 0;
+
+            comment_end:
+            commentariesBuffer[0] = '\0';
+            i = 0;
+                
+            identifier_end:
+            identifiersBuffer[0] = '\0';
+            j = 0;
+                
+            operators_end:
+            operatorsBuffer[0] = '\0';
+            k = 0;
+                
+            delimiters_end:
+            delimitersBuffer[0] = '\0';
+            l = 0;
             
+    
     goto end;
+
+    numbers:
+
+        int hasDot = 0;
+        
+        int hasExp = 0;
+    
+        goto NUMBERS_Q0;
+
+        NUMBERS_Q0:
+
+            if (c != EOF && isdigit(c) && m < sizeof(numberBuffer) - 1) {
+
+                numberBuffer[m] = c;
+                
+                c = fgetc(copy);
+
+                m++;
+
+                goto NUMBERS_Q1;
+
+            } else {
+
+                goto numbers_end;
+
+            }
+            
+        NUMBERS_Q1:
+
+            if (c != EOF && isdigit(c) && m < sizeof(numberBuffer) - 1) {
+
+                numberBuffer[m] = c;
+
+                c = fgetc(copy);
+                
+                m++;
+                
+                goto NUMBERS_Q1;
+                
+            } else if (c != EOF && c == '.' && m < sizeof(numberBuffer) - 1) {
+    
+                if (hasDot) {
+
+                    numberBuffer[m++] = c;
+
+                    while ((c = fgetc(copy)) != EOF && (isdigit(c) || c == '.')) {
+                        numberBuffer[m++] = c;
+                    }
+
+                    numberBuffer[m] = '\0';
+
+                    char lineError[256];
+
+                    snprintf(lineError, sizeof(lineError),
+                        "Erro léxico na linha %d: número inválido '%s'\n", id, numberBuffer);
+
+                    fputs(lineError, lexycalErrorsIdentified);
+                    printf("[ ERRO ] %s", lineError);
+
+                    goto numbers_end;
+                }
+
+                hasDot = 1;
+
+                numberBuffer[m++] = c;
+                
+                c = fgetc(copy);
+                
+                goto NUMBERS_Q1;
+            
+            
+            } else if (c != EOF && (c == 'e' || c == 'E') && m < sizeof(numberBuffer) - 1) {
+    
+                if (hasExp) {
+
+                    numberBuffer[m] = '\0';
+                    
+                    char lineError[256];
+                    
+                    snprintf(lineError, sizeof(lineError),
+                        "Erro léxico na linha %d: número inválido '%s'\n", id, numberBuffer);
+
+                    
+                    fputs(lineError, lexycalErrorsIdentified);
+                    
+                    printf("[ ERRO ] %s", lineError);
+
+                    goto numbers_end;
+                }
+
+                hasExp = 1;
+            
+                numberBuffer[m++] = c;
+            
+                c = fgetc(copy);
+            
+                goto NUMBERS_Q1;
+            
+            } else {
+
+                numberBuffer[m++] = '\n';
+                
+                numberBuffer[m++] = '\0';
+                
+                token->id = id;
+
+                token->value = strdup(numberBuffer);
+
+                char *newline = strchr(token->value, '\n');
+                
+                if (newline) *newline = '\0';
+
+                fprintf(tokensIdentified, "<%s>\n", token->value);
+
+                char lineNumber[256];
+
+                snprintf(lineNumber, sizeof(lineNumber), "Identificado na linha %d: %s\n", id, numberBuffer);
+                
+                fputs(lineNumber, tokensIdentified);
+
+                printf("[ SUCESSO ] Número aceito na linha %d!\n", id);
+
+                goto numbers_end;
+                
+            }
 
     comments:
 
@@ -541,7 +918,6 @@ Token *getNextToken(FILE *copy) {
                 char lineComment[256];
 
                 snprintf(lineComment, sizeof(lineComment), "Identificado na linha %d: %s", id, commentariesBuffer);
-
                 
                 fputs(lineComment, commentariesIdentified);
 
@@ -827,6 +1203,7 @@ Token *getNextToken(FILE *copy) {
     fclose(operatorsIdentified);
     fclose(delimitersIdentified);
     fclose(tokensIdentified);
+    fclose(lexycalErrorsIdentified);
 
     return token;
     

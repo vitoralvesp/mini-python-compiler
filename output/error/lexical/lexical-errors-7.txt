@@ -1,0 +1,1 @@
+x=10/*issoéumcomentário*/y=20

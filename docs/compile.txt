@@ -1,1 +1,5 @@
+COMPILAÇÃO:
 gcc -Wall -Wno-unused-result -g -Og src/miniPythonCompiler.c -o temp/app
+
+ERROS LÉXICOS:
+temp/app input/error/lexycal-errors-1.txt
