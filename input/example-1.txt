@@ -2,14 +2,14 @@
 
 #exemplo1
 
-vetorList = [2, 3, 5, 7, 11
+vetorList = [2, 3, 5, 7, 11]
 
 i = 0
 
-while i < len(vetorList:
+while i < len(vetorList):
 
-print(vetorList[i]
-$
+print(vetorList[i])
+
 i = i + 1
 
 ######################
@@ -17,7 +17,7 @@ i = i + 1
 #exemplo2
 
 
-number1 = input("digite um numero: "
+number1 = input("digite um numero: ")
 
 number2 = input("digite outro numero: ")
 

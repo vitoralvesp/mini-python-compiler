@@ -89,11 +89,14 @@ Token *getNextToken(FILE *copy);
 
 int insertTokenIntoSymbolTable(Token token, SymbolTable *symbolTable);
 
-int fillSymbolTable();
+int fillSymbolTable(SymbolTable *symbolTable);
+
+int printSymbolTable(SymbolTable *symbolTable);
 
 int clearFile(const char *filePath);
 
 int isValidChar(char c);
+
 
 int main(int argc, char *argv[]) {
 
@@ -161,11 +164,15 @@ int main(int argc, char *argv[]) {
 
     clearFile(LEXYCAL_ERRORS_DEDICATED_FILE);
 
+    SymbolTable *symbolTable = (SymbolTable *)malloc(sizeof(SymbolTable));
+    
     while (1) {
         
         Token *t = getNextToken(copy);
         
         if (t == NULL) break;
+
+        insertTokenIntoSymbolTable(*t, symbolTable);
     
     }
 
@@ -230,6 +237,10 @@ int main(int argc, char *argv[]) {
         puts("[ SUCESSO ] Prosseguindo para a análise léxica!");
     
     }
+
+    printf("\n");
+    
+    printSymbolTable(symbolTable);
 
     return 0;
 }
@@ -486,56 +497,62 @@ Token *getNextToken(FILE *copy) {
     if (c != EOF) {
 
         if (c == '\n') id++;
-
-        if (isdigit(c)) {
-
-            goto numbers;
-
-        }
         
         // Identificadores
         if (isdigit(c) || isalpha(c) || c == '_') {
 
-            char buffer[256];
-            int idx = 0;
+            if (isdigit(c)) {
 
-            buffer[idx++] = c;
+                char buffer[256];
+                int idx = 0;
 
-            int next = fgetc(copy);
+                buffer[idx++] = c;
 
-            int isInvalid = 0;
+                int next = fgetc(copy);
 
-            while (next != EOF) {
-                if (isalnum(next) || next == '_') {
+                int hasLetter = 0;
+
+                while (next != EOF && (isalnum(next) || next == '_')) {
+
+                    if (isalpha(next) || next == '_') {
+                        hasLetter = 1;  // ← AQUI está a chave
+                    }
+
                     buffer[idx++] = next;
-                } else if (next == '#') {
-                    buffer[idx++] = next;
-                    isInvalid = 1;
-                } else {
-                    break;
+                    next = fgetc(copy);
                 }
-                next = fgetc(copy);
-            }
 
-            buffer[idx] = '\0';
+                buffer[idx] = '\0';
 
-            if (next != EOF) ungetc(next, copy);
+                if (next != EOF) ungetc(next, copy);
 
-            int hasLetter = 0;
+                if (hasLetter) {
+                    
+                    char lineError[256];
 
-            if (isInvalid) {
+                    snprintf(lineError, sizeof(lineError),
+                        "Erro léxico na linha %d: identificador inválido '%s'\n", id, buffer);
+
+                    fputs(lineError, lexycalErrorsIdentified);
+                    printf("[ ERRO ] %s\n", lineError);
+
+                    goto end;
+                }
+
                 
-                char lineError[256];
+                ungetc(buffer[1], copy);
+                
+                c = buffer[0];
+                
+                goto numbers;
+            
+            } else {
 
-                snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: identificador inválido '%s'\n", id, buffer);
+                token->type = "IDENTIFIER";
 
-                fputs(lineError, lexycalErrorsIdentified);
-                printf("[ ERRO ] %s", lineError);
+                goto identifiers;
+
             }
-
-            //return token;
-
-            goto identifiers;
 
         }
         
@@ -791,7 +808,7 @@ Token *getNextToken(FILE *copy) {
                     char lineError[256];
 
                     snprintf(lineError, sizeof(lineError),
-                        "Erro léxico na linha %d: número inválido '%s'\n", id, numberBuffer);
+                        "Erro léxico na linha %d: número inválido %s\n", id, numberBuffer);
 
                     fputs(lineError, lexycalErrorsIdentified);
                     printf("[ ERRO ] %s", lineError);
@@ -816,8 +833,7 @@ Token *getNextToken(FILE *copy) {
                     
                     char lineError[256];
                     
-                    snprintf(lineError, sizeof(lineError),
-                        "Erro léxico na linha %d: número inválido '%s'\n", id, numberBuffer);
+                    snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: número inválido %s\n", id, numberBuffer);
 
                     
                     fputs(lineError, lexycalErrorsIdentified);
@@ -853,9 +869,9 @@ Token *getNextToken(FILE *copy) {
 
                 char lineNumber[256];
 
-                snprintf(lineNumber, sizeof(lineNumber), "Identificado na linha %d: %s\n", id, numberBuffer);
+                snprintf(lineNumber, sizeof(lineNumber), "Identificado na linha %d: %s", id, numberBuffer);
                 
-                fputs(lineNumber, tokensIdentified);
+                // fputs(lineNumber, tokensIdentified);
 
                 printf("[ SUCESSO ] Número aceito na linha %d!\n", id);
 
@@ -981,7 +997,7 @@ Token *getNextToken(FILE *copy) {
 
                     char lineIdentifier[256];
 
-                    snprintf(lineIdentifier, sizeof(lineIdentifier), "Identificado na linha %d: %s\n", id, identifiersBuffer);
+                    snprintf(lineIdentifier, sizeof(lineIdentifier), "Identificado na linha %d: %s", id, identifiersBuffer);
                     
                     fputs(lineIdentifier, identifiersIdentified);
 
@@ -1020,7 +1036,7 @@ Token *getNextToken(FILE *copy) {
 
                     char lineOperator[256];
 
-                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
 
                     fputs(lineOperator, operatorsIdentified);
 
@@ -1058,7 +1074,7 @@ Token *getNextToken(FILE *copy) {
 
                     char lineOperator[256];
 
-                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
 
                     fputs(lineOperator, operatorsIdentified);
 
@@ -1100,7 +1116,7 @@ Token *getNextToken(FILE *copy) {
 
                     char lineOperator[256];
 
-                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
 
                     fputs(lineOperator, operatorsIdentified);
 
@@ -1132,7 +1148,7 @@ Token *getNextToken(FILE *copy) {
 
         char lineOperator[256];
 
-        snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s\n", id, operatorsBuffer);
+        snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
 
         fputs(lineOperator, operatorsIdentified);
 
@@ -1184,7 +1200,7 @@ Token *getNextToken(FILE *copy) {
 
             char lineDelimiter[256];
 
-            snprintf(lineDelimiter, sizeof(lineDelimiter), "Identificado na linha %d: %s\n", id, delimitersBuffer);
+            snprintf(lineDelimiter, sizeof(lineDelimiter), "Identificado na linha %d: %s", id, delimitersBuffer);
 
             fputs(lineDelimiter, delimitersIdentified);
 
@@ -1209,10 +1225,95 @@ Token *getNextToken(FILE *copy) {
     
 }
 
-int fillSymbolTable() {
+int insertTokenIntoSymbolTable(Token token, SymbolTable *symbolTable) {
 
-    //getNextToken();
+    for (int i = 0; i < 256; i++) {
+
+        if (symbolTable->id[i] == token.id) {
+            return 0;
+        }
+
+    }
+
+    for (int i = 0; i < 256; i++) {
+
+        if (symbolTable->id[i] == 0) {
+            symbolTable->id[i] = token.id;
+            symbolTable->name[i] = strdup(token.value);
+            symbolTable->type[i] = strdup(token.type);
+            return 1;
+        }
+
+    }
+
+    return -1;
+
+}
+
+int fillSymbolTable(SymbolTable *symbolTable) {
+
+    FILE *tokensIdentified = fopen(TOKENS_DEDICATED_FILE, "r");
+
+    if (!tokensIdentified) return 1;
+
+    char line[256];
+
+    while (fgets(line, sizeof(line), tokensIdentified)) {
+
+        char *tokenValue = strtok(line, "<>\n");
+
+        if (tokenValue) {
+            Token token;
+            token.id = id++;
+            token.value = strdup(tokenValue);
+            token.type = "IDENTIFIER"; // Aqui você pode implementar uma lógica para determinar o tipo do token
+            insertTokenIntoSymbolTable(token, symbolTable);
+        }
+    }
+
+    fclose(tokensIdentified);
 
     return 0;
+}
 
+int printSymbolTable(SymbolTable *symbolTable) {
+
+    int maxName = strlen("Nome");
+    int maxType = strlen("Tipo");
+
+    for (int i = 0; i < 256; i++) {
+        if (symbolTable->id[i] != 0) {
+            
+            int nameLen = strlen(symbolTable->name[i]);
+            int typeLen = strlen(symbolTable->type[i]);
+
+            if (nameLen > maxName) maxName = nameLen;
+            if (typeLen > maxType) maxType = typeLen;
+        }
+    }
+
+    maxName += 2;
+    maxType += 2;
+
+    printf("Tabela de Símbolos:\n");
+
+    printf("%-10s %-*s %-*s\n",
+           "ID",
+           maxName, "Nome",
+           maxType, "Tipo");
+
+    int totalWidth = 10 + maxName + maxType + 2;
+    for (int i = 0; i < totalWidth; i++) printf("=");
+    printf("\n");
+
+    for (int i = 0; i < 256; i++) {
+        if (symbolTable->id[i] != 0) {
+            printf("%-10d %-*s %-*s\n",
+                   symbolTable->id[i],
+                   maxName, symbolTable->name[i],
+                   maxType, symbolTable->type[i]);
+        }
+    }
+
+    return 0;
 }

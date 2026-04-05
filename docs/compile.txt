@@ -2,4 +2,11 @@ COMPILAÇÃO:
 gcc -Wall -Wno-unused-result -g -Og src/miniPythonCompiler.c -o temp/app
 
 ERROS LÉXICOS:
-temp/app input/error/lexycal-errors-1.txt
+temp/app input/error/lexical/lexycal-errors-1.txt
+temp/app input/error/lexical/lexycal-errors-2.txt
+temp/app input/error/lexical/lexycal-errors-3.txt
+temp/app input/error/lexical/lexycal-errors-4.txt
+temp/app input/error/lexical/lexycal-errors-5.txt
+temp/app input/error/lexical/lexycal-errors-6.txt
+temp/app input/error/lexical/lexycal-errors-7.txt
+temp/app input/error/lexical/lexycal-errors-8.txt
