@@ -1,0 +1,1 @@
+nomeusuario="Vitor"print(nomeusuario)

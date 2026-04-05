@@ -1,0 +1,2 @@
+2variavel = 10
+print(2variavel)

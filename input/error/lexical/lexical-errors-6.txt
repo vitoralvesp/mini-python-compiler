@@ -1,0 +1,2 @@
+valor = 12.3.4
+print(valor)

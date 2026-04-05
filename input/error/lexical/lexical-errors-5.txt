@@ -1,0 +1,2 @@
+nome#usuario = "Vitor"
+print(nome#usuario)
