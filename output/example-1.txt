@@ -1,1 +1,49 @@
-exemplo1vetorList=[2,3,5,7,11]i=0whilei<len(vetorList):print(vetorList[i])i=i+1exemplo2number1=input("digiteumnumero:")number2=input("digiteoutronumero:")ifnumber1>number2:print"omaiornumeroeh--->",number1ifnumber2>number1:print"omaiornumeroeh--->",number2else:printnumber1,"=",number2exemplo3foriinrange(50):ifi%2==0:printi,'épar'else:printi,'éimpar'
+
+
+exemplo1
+
+vetorList = [2, 3, 5, 7, 11]
+
+i = 0
+
+while i < len(vetorList):
+
+print(vetorList[i])
+
+i = i + 1
+
+
+
+exemplo2
+
+
+number1 = input("digite um numero: ")
+
+number2 = input("digite outro numero: ")
+
+if number1 > number2:
+
+print "o maior numero eh ---> ", number1
+
+if number2 > number1:
+
+print "o maior numero eh ---> ", number2
+
+else:
+
+print number1, " = ", number2
+
+
+
+exemplo3
+
+
+for i in range(50):
+
+if i%2 == 0:
+
+print i, 'é par'
+
+else:
+
+print i, 'é impar'

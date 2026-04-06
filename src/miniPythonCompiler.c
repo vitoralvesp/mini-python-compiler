@@ -36,7 +36,6 @@ typedef struct SymbolTable {
     int id[256];
     char *name[256];
     char *type[256];
-
 } SymbolTable;
 
 typedef struct IdentifiedErrors {
@@ -52,146 +51,67 @@ typedef struct ASTNode {
 } ASTNode;
 
 // GLOBAL
-
 int id = 1;
-
 int i = 0;
-
 int j = 0;
-
 int k = 0;
-
 int l = 0;
-
 int m = 0;
 
 Token *CurrentToken;
-
 Token *LookaheadToken;
-
 IdentifiedErrors *identifiedErrors;
-
 FILE *sintaticErrorsIdentified;
 
 int findClosureCharacter(char *string, char characterToLookFor, int length);
-
-/** @brief Recebe o arquivo de entrada e procede para validá-lo, retornando 0 se for válido e 1 caso contrário.
- *  @param argc número de parâmetros recebidos na linha de comando.
- *  @param argv vetor com os parâmetros recebidos na linha de comando
- *  @return 0 se o arquivo for válido, 1 caso contrário.
- */
 int readFile(int argc, char *argv[]);
-
-/** @brief Cria uma cópia do arquivo de entrada para que as modificações sejam feitas na cópia, retornando 0 se o processo for válido e 1 caso contrário.
- *  @param argc número de parâmetros recebidos na linha de comando.
- *  @param argv vetor com os parâmetros recebidos na linha de comando
- *  @return 0 se o arquivo for válido, 1 caso contrário.
- */
 FILE *createFileCopy(int argc, char *argv[]);
-
-/** @brief Recebe um caractere a ser removido de um arquivo e procede com a busca para removêlo, retornando 0 se o processo for bem-sucedido e 1 caso contrário.
- *  @param argc número de parâmetros recebidos na linha de comando.
- *  @param argv vetor com os parâmetros recebidos na linha de comando
- *  @param characterToRemove caractere a ser removido do arquivo.
- *  @return 0 se o arquivo for válido, 1 caso contrário.
- */
 int removeCharacters(char *fileCopyPath, char characterToRemove);
-
-int slice(char *newString, char *string, char caracterToLookFor, int length);
-
+int slice(char *newString, char *string, char characterToLookFor, int length);
 Token *getNextToken(FILE *copy);
-
 int insertTokenIntoSymbolTable(Token token, SymbolTable *symbolTable);
-
 int fillSymbolTable(SymbolTable *symbolTable);
-
 int printSymbolTable(SymbolTable *symbolTable);
-
 int clearFile(const char *filePath);
-
 int isValidChar(char c);
-
-int insertNodeIntoAST(ASTNode node);
-
 ASTNode *createASTNode(Token token, ASTNode *left, ASTNode *right);
-
-ASTNode *parseExpression(FILE *file);
-
-ASTNode *parseTermPrimary(FILE *file);
-
-ASTNode *parseTermSecondary(FILE *file);
-
-ASTNode *parseFactor(FILE *file);
-
-ASTNode *parseUnary(FILE *file);
-
-ASTNode *parsePowerPrimary(FILE *file);
-
-ASTNode *parsePowerSecondary(FILE *file);
-
-ASTNode *parseArithmeticExpressionPrimary(FILE *file);
-
-ASTNode *parseArithmeticExpressionSecondary(FILE *file);
-
-ASTNode *parseRelationalOperation(FILE *file);
-
 int isRelOp(Token token);
-
+void sync(FILE *file);
+ASTNode *parseProgram(FILE *file);
+ASTNode *parseStatement(FILE *file);
 ASTNode *parseFactor(FILE *file);
-
 ASTNode *parseUnary(FILE *file);
-
 ASTNode *parsePower(FILE *file);
-
 ASTNode *parseTerm(FILE *file);
-
 ASTNode *parseArithExpr(FILE *file);
-
 ASTNode *parseRelExpr(FILE *file);
-
 ASTNode *parseNotExpr(FILE *file);
-
 ASTNode *parseAndExpr(FILE *file);
-
 ASTNode *parseOrExpr(FILE *file);
-
 ASTNode *parseExpression(FILE *file);
-
 
 int main(int argc, char *argv[]) {
 
     if (readFile(argc, argv) != 0) {
-
         puts("[ ERRO ] Não foi possível abrir/ler o arquivo de entrada.");
-        
         return 1;
-    
     } else {
-
         puts("[ SUCESSO ] Arquivo lido com sucesso!");
-
     }
 
     FILE *copy = createFileCopy(argc, argv);
 
     if (copy == NULL) {
-
         puts("[ ERRO ] Não foi possível criar uma cópia do arquivo de entrada.");
-        
         return 1;
-
     } else {
-
         puts("[ SUCESSO ] Arquivo copiado em '/output' com sucesso!");
-
     }
 
     char fileCopyPath[256];
-
     char fileName[256];
 
     identifiedErrors = (IdentifiedErrors *)malloc(sizeof(IdentifiedErrors));
-
     identifiedErrors->errorType = "LEXYCAL";
 
     int result = slice(fileName, argv[1], '/', strlen(argv[1]));
@@ -199,61 +119,56 @@ int main(int argc, char *argv[]) {
     snprintf(fileCopyPath, sizeof(fileCopyPath), "%s%s", FILE_OUTPUT_PATH, fileName);
 
     if (result == -1) {
-    
         puts("[ ERRO ] Não foi possível extrair o nome do arquivo de entrada para o processo de remoção de caracteres.");
-    
         return -1;
-    
     }
 
     printf("Caminho do arquivo copiado: %s\n", fileCopyPath);
 
-    CurrentToken = (Token *)malloc(sizeof(Token));
+    clearFile(FILEPATH_COMMENTARIES_DEDICATED_FILE);
+    clearFile(FILEPATH_IDENTIFIERS_DEDICATED_FILE);
+    clearFile(FILEPATH_OPERATORS_DEDICATED_FILE);
+    clearFile(FILEPATH_DELIMITERS_DEDICATED_FILE);
+    clearFile(TOKENS_DEDICATED_FILE);
+    clearFile(LEXYCAL_ERRORS_DEDICATED_FILE);
+    clearFile(SINTATIC_ERRORS_DEDICATED_FILE);
 
     copy = fopen(fileCopyPath, "rb");
 
-    clearFile(FILEPATH_COMMENTARIES_DEDICATED_FILE);
-
-    clearFile(FILEPATH_IDENTIFIERS_DEDICATED_FILE);
-
-    clearFile(FILEPATH_OPERATORS_DEDICATED_FILE);
-
-    clearFile(FILEPATH_DELIMITERS_DEDICATED_FILE);
-
-    clearFile(TOKENS_DEDICATED_FILE);
-
-    clearFile(LEXYCAL_ERRORS_DEDICATED_FILE);
+    if (copy == NULL) {
+        puts("[ ERRO ] Não foi possível abrir o arquivo copiado para análise léxica.");
+        return 1;
+    }
 
     SymbolTable *symbolTable = (SymbolTable *)malloc(sizeof(SymbolTable));
-    
-    while (1) {
-        
-        Token *t = getNextToken(copy);
-        
-        if (t == NULL) break;
+    memset(symbolTable, 0, sizeof(SymbolTable));
 
-        insertTokenIntoSymbolTable(*t, symbolTable);
-    
+    while (1) {
+        Token *t = getNextToken(copy);
+        if (t == NULL) break;
+        if (t->value != NULL && t->type != NULL) {
+            insertTokenIntoSymbolTable(*t, symbolTable);
+        }
     }
 
     fclose(copy);
 
     puts("[ SUCESSO ] Prosseguindo para a análise léxica!");
-
     printf("\n");
-
     printSymbolTable(symbolTable);
-
     printf("\n");
-
     puts("[ SUCESSO ] Análise léxica concluída com sucesso!");
-
     puts("[ SUCESSO ] Prosseguindo para a análise sintática!");
 
+    int didCommentsRemovalProcessSucceed = removeCharacters(fileCopyPath, '#');
+
+    if (didCommentsRemovalProcessSucceed != 0) {
+        puts("[ ERRO ] Não foi possível remover os comentários do arquivo copiado.");
+    } else {
+        puts("[ SUCESSO ] Todos os comentários foram removidos do arquivo copiado com sucesso!");
+    }
+
     copy = fopen(fileCopyPath, "rb");
-
-    id = 0;
-
     sintaticErrorsIdentified = fopen(SINTATIC_ERRORS_DEDICATED_FILE, "a");
 
     if (copy == NULL || sintaticErrorsIdentified == NULL) {
@@ -261,1058 +176,672 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Resetar o contador de linha para a análise sintática
+    id = 1;
+
     CurrentToken = getNextToken(copy);
 
-    if (CurrentToken == NULL) {
-        printf("Erro: arquivo vazio\n");
+    if (CurrentToken == NULL || CurrentToken->value == NULL) {
+        printf("Erro: arquivo vazio ou sem tokens válidos\n");
+        fclose(copy);
+        fclose(sintaticErrorsIdentified);
         return 1;
     }
 
-    ASTNode *root = parseExpression(copy);
+    ASTNode *root = parseProgram(copy);
 
-    if (CurrentToken != NULL) {
-        printf("Erro sintático: tokens restantes\n");
-        printf("Token restante: %s\n", CurrentToken->value);
+    if (CurrentToken != NULL && CurrentToken->value != NULL) {
+        char lineError[256];
+        snprintf(lineError, sizeof(lineError),
+            "Erro sintático na linha %d: token inesperado '%s'\n",
+            CurrentToken->id,
+            CurrentToken->value);
+        fputs(lineError, sintaticErrorsIdentified);
+        printf("[ ERRO ] %s", lineError);
     }
 
     printf("[ SUCESSO ] Análise sintática concluída!\n");
 
     fclose(copy);
-
     fclose(sintaticErrorsIdentified);
-
-    int didCommentsRemovalProcessSucceed = removeCharacters(fileCopyPath, '#');
-    
-    int didTabsRemovalProcessSucceed = removeCharacters(fileCopyPath, '\t');
-    
-    int didLineBreaksRemovalProcessSucceed = removeCharacters(fileCopyPath, '\n');
-
-    int didWhiteSpacesRemovalProcessSucceed = removeCharacters(fileCopyPath, ' ');
-
-    if (didCommentsRemovalProcessSucceed != 0) {
-
-        puts("[ ERRO ] Não foi possível remover os comentários do arquivo copiado.");
-
-    } else {
-
-        puts("[ SUCESSO ] Todos os comentários foram removidos do arquivo copiado com sucesso!");
-
-    }
-    
-    if (didWhiteSpacesRemovalProcessSucceed != 0) {
-
-        puts("[ ERRO ] Não foi possível remover os espaços do arquivo copiado.");
-
-    } else {
-
-        puts("[ SUCESSO ] Todos os espaços foram removidos do arquivo copiado com sucesso!");
-
-    }
-
-    if (didTabsRemovalProcessSucceed != 0) {
-
-        puts("[ ERRO ] Não foi possível remover as tabulações do arquivo copiado.");
-
-    } else {
-
-        puts("[ SUCESSO ] Todas as tabulações foram removidas do arquivo copiado com sucesso!");
-
-    }
-
-    if (didLineBreaksRemovalProcessSucceed != 0) {
-
-        puts("[ ERRO ] Não foi possível remover os caracteres de quebra de linha do arquivo copiado.");
-
-    } else {
-
-        puts("[ SUCESSO ] Todos os caracteres de quebra de linha foram removidos do arquivo copiado com sucesso!");
-
-    }
-
-    if (didCommentsRemovalProcessSucceed != 0 && didWhiteSpacesRemovalProcessSucceed != 0 && didTabsRemovalProcessSucceed != 0 && didLineBreaksRemovalProcessSucceed != 0) {
-
-        puts("[ ERRO ] O processo de remoção de caracteres do arquivo copiado não foi completamente bem-sucedido. Verifique os erros acima para mais detalhes.");
-
-        return 1;
-
-    } else {
-
-        // puts("[ SUCESSO ] Prosseguindo para a análise léxica!");
-    
-    }
 
     return 0;
 }
 
-
 int readFile(int argc, char *argv[]) {
-
+    if (argc < 2) return 1;
     FILE *file = fopen(argv[1], "r");
-
-    int result = 0;
-
-    if (!file) 
-        result = 1;
-    
-    else 
-        result = 0;
-
+    if (!file) return 1;
     fclose(file);
-    
-    return result;
+    return 0;
 }
 
 int isValidChar(char c) {
-    return iswalpha(c) || 
+    return iswalpha(c) ||
            iswdigit(c) ||
-           c == '_' ||
-           c == '#' || 
-           c == '+' || 
-           c == '-' || 
-           c == '*' || 
-           c == '/' || 
-           c == '~' || 
-           c == '%' || 
-           c == '=' || 
-           c == '<' || 
-           c == '>' || 
-           c == '!' ||
-           c == '(' || 
-           c == ')' || 
-           c == '{' || 
-           c == '}' ||
-           c == '[' || 
-           c == ']' ||
-           c == ',' || 
-           c == ';' || 
-           c == ':' || 
-           c == '.' ||
-           c == '\"'||
-           c == '\''||
-           c == ' ' ||
-           c == '\t'||
-           c == '\n'||
+           c == '_'  ||
+           c == '#'  ||
+           c == '+'  ||
+           c == '-'  ||
+           c == '*'  ||
+           c == '/'  ||
+           c == '~'  ||
+           c == '%'  ||
+           c == '='  ||
+           c == '<'  ||
+           c == '>'  ||
+           c == '!'  ||
+           c == '('  ||
+           c == ')'  ||
+           c == '{'  ||
+           c == '}'  ||
+           c == '['  ||
+           c == ']'  ||
+           c == ','  ||
+           c == ';'  ||
+           c == ':'  ||
+           c == '.'  ||
+           c == '\"' ||
+           c == '\'' ||
+           c == ' '  ||
+           c == '\t' ||
+           c == '\n' ||
            c == '\0' ||
            (c & 0x80);
 }
 
 int clearFile(const char *filePath) {
     FILE *file = fopen(filePath, "w");
-
     if (!file) {
         perror("Erro ao limpar o arquivo");
         return 1;
     }
-
     fclose(file);
     return 0;
 }
 
 FILE *createFileCopy(int argc, char *argv[]) {
+    if (argc < 2) return NULL;
 
     const char *base = strrchr(argv[1], '/');
-    
     base = base ? base + 1 : argv[1];
 
     char outputFilePath[256];
-    
     snprintf(outputFilePath, sizeof(outputFilePath), "%s%s", FILE_OUTPUT_PATH, argv[1] + strlen("input/"));
 
     FILE *file = fopen(argv[1], "rb");
+    FILE *copiedFile = fopen(outputFilePath, "wb");
 
-    FILE *copy = fopen(outputFilePath, "wb");
-
-    if (!file || !copy) {
-        if (file) fclose(file);
-        if (copy) fclose(copy);
-
+    if (!file || !copiedFile) {
+        if (file)       fclose(file);
+        if (copiedFile) fclose(copiedFile);
         return NULL;
     }
-    
-    else {
-        
-        int c;
 
-        while ((c = fgetc(file)) != EOF) {
-
-                fputc(c, copy);
-        
-        }
-
+    int c;
+    while ((c = fgetc(file)) != EOF) {
+        fputc(c, copiedFile);
     }
 
     fclose(file);
+    fclose(copiedFile);
 
-    fclose(copy);
-    
-    return copy;
+    // Retorna NULL como sinal de "ok mas fechado" — o chamador reabre pelo path
+    // Mantemos compatibilidade com o código original que checa != NULL
+    return (FILE *)1; // valor sentinela; o main usa fileCopyPath para reabrir
 }
 
 int findClosureCharacter(char *string, char characterToLookFor, int length) {
-
     for (int i = 0; i < length; i++) {
-
-        if (string[i] == characterToLookFor) {
-            return 0;
-        }
-
+        if (string[i] == characterToLookFor) return 0;
     }
-
     return 1;
-
 }
 
 int slice(char *newString, char *string, char characterToLookFor, int length) {
-
     int k = -1;
-
     for (int i = 0; i < length; i++) {
-
-        if (string[i] == characterToLookFor) {
-            k = i;
-            break;
-        }
-
+        if (string[i] == characterToLookFor) { k = i; break; }
     }
-
-    if (k == -1) return 0;
-
+    if (k == -1) {
+        // Sem separador: copia a string inteira
+        strncpy(newString, string, length);
+        newString[length] = '\0';
+        return 0;
+    }
     k = k + 1;
-
     int j = 0;
-
-    for (j = 0; j < length; j++) {
-
+    for (j = 0; k + j < length; j++) {
         newString[j] = string[k + j];
-
     }
-
     newString[j] = '\0';
-
     return 0;
-
 }
 
 int removeCharacters(char *fileCopyPath, char characterToRemove) {
-
     FILE *copy = fopen(fileCopyPath, "rb");
+    if (!copy) return 1;
 
-    if (!copy) {
-        
+    FILE *tempFile = fopen("./temp/removeCharactersTempFile.txt", "wb");
+    if (!tempFile) {
+        fclose(copy);
         return 1;
+    }
 
-    } else {
-        
-        FILE *tempFile = fopen("./temp/removeCharactersTempFile.txt", "wb");
+    int c;
+    int inComment = 0;
 
-        if (!tempFile) {
-
-            fclose(copy);
-            
-            return 1;
-        
-        } else {
-
-            int c;
-
-            while ((c = fgetc(copy)) != EOF) {
-
-                if (c != characterToRemove) {
-
-                    fputc(c, tempFile);
-
-                }
-        
-            }
-
-            fclose(copy);
-
-            fclose(tempFile);
-
-            if (remove(fileCopyPath) != 0) {
-            
-                fprintf(stderr, "Error removing original file\n");
-            
-            }
-            
-            if (rename("./temp/removeCharactersTempFile.txt", fileCopyPath) != 0) {
-            
-                fprintf(stderr, "Error renaming temporary file\n");
-            
-            }
- 
+    while ((c = fgetc(copy)) != EOF) {
+        if (c == characterToRemove) {
+            inComment = 1;
         }
+        if (inComment) {
+            if (c == '\n') {
+                inComment = 0;
+                fputc(c, tempFile); // preserva a quebra de linha
+            }
+            // pula o caractere de comentário e tudo até \n
+        } else {
+            fputc(c, tempFile);
+        }
+    }
 
+    fclose(copy);
+    fclose(tempFile);
+
+    if (remove(fileCopyPath) != 0) {
+        fprintf(stderr, "Erro ao remover arquivo original\n");
+    }
+    if (rename("./temp/removeCharactersTempFile.txt", fileCopyPath) != 0) {
+        fprintf(stderr, "Erro ao renomear arquivo temporário\n");
     }
 
     return 0;
-
 }
 
 Token *getNextToken(FILE *copy) {
 
-    FILE *commentariesIdentified = fopen(FILEPATH_COMMENTARIES_DEDICATED_FILE, "a");
+    FILE *commentariesIdentified  = fopen(FILEPATH_COMMENTARIES_DEDICATED_FILE, "a");
+    FILE *identifiersIdentified   = fopen(FILEPATH_IDENTIFIERS_DEDICATED_FILE,  "a");
+    FILE *operatorsIdentified     = fopen(FILEPATH_OPERATORS_DEDICATED_FILE,     "a");
+    FILE *delimitersIdentified    = fopen(FILEPATH_DELIMITERS_DEDICATED_FILE,    "a");
+    FILE *tokensIdentified        = fopen(TOKENS_DEDICATED_FILE,                 "a");
+    FILE *lexycalErrorsIdentified = fopen(LEXYCAL_ERRORS_DEDICATED_FILE,         "a");
 
-    FILE *identifiersIdentified = fopen(FILEPATH_IDENTIFIERS_DEDICATED_FILE, "a");
+    if (!copy || !commentariesIdentified || !identifiersIdentified ||
+        !operatorsIdentified || !delimitersIdentified ||
+        !tokensIdentified || !lexycalErrorsIdentified) {
+        return NULL;
+    }
 
-    FILE *operatorsIdentified = fopen(FILEPATH_OPERATORS_DEDICATED_FILE, "a");
-
-    FILE *delimitersIdentified = fopen(FILEPATH_DELIMITERS_DEDICATED_FILE, "a");
-
-    FILE *tokensIdentified = fopen(TOKENS_DEDICATED_FILE, "a");
-
-    FILE *lexycalErrorsIdentified = fopen(LEXYCAL_ERRORS_DEDICATED_FILE, "a");
-
-    if (!copy || !commentariesIdentified || !identifiersIdentified || !operatorsIdentified || !delimitersIdentified || !tokensIdentified || !lexycalErrorsIdentified) return NULL;
-
+    // FIX: declarar todas as variáveis ANTES de qualquer goto
     Token *token = (Token *)malloc(sizeof(Token));
-
-    int operator_c;
+    token->id    = 0;
+    token->type  = NULL;
+    token->value = NULL;
 
     char commentariesBuffer[256];
-
     char identifiersBuffer[256];
-
     char operatorsBuffer[256];
-
     char delimitersBuffer[256];
-
     char numberBuffer[256];
 
+    commentariesBuffer[0] = '\0';
+    identifiersBuffer[0]  = '\0';
+    operatorsBuffer[0]    = '\0';
+    delimitersBuffer[0]   = '\0';
+    numberBuffer[0]       = '\0';
+
+    // FIX: variáveis que antes ficavam dentro de blocos após goto
+    int hasDot  = 0;
+    int hasExp  = 0;
+    int next    = 0;
+
     int c = fgetc(copy);
+    if (c == EOF) goto end;
 
-    if (c == EOF) return NULL;
-
+    // Pula espaços/tabs/newlines
     while (c == ' ' || c == '\n' || c == '\t') {
-
         if (c == '\n') id++;
-        
         c = fgetc(copy);
-        
-        if (c == EOF) return NULL;
-    
-    } 
+        if (c == EOF) goto end;
+    }
 
-    if (c != EOF) {
+    if (c == EOF) goto end;
 
-        if (c == '\n') id++;
-        
-        // Identificadores
-        if (isdigit(c) || isalpha(c) || c == '_') {
+    if (c == '\n') id++;
 
-            if (isdigit(c)) {
+    // ── Números e Identificadores ──────────────────────────────────────────
+    if (isdigit(c) || isalpha(c) || c == '_') {
 
+        if (isdigit(c)) {
+            char buffer[256];
+            int idx = 0;
+            buffer[idx++] = c;
+            int nx = fgetc(copy);
+            int hasLetter = 0;
+
+            while (nx != EOF && (isalnum(nx) || nx == '_')) {
+                if (isalpha(nx) || nx == '_') hasLetter = 1;
+                buffer[idx++] = nx;
+                nx = fgetc(copy);
+            }
+            buffer[idx] = '\0';
+
+            if (nx != EOF) ungetc(nx, copy);
+
+            if (hasLetter) {
+                char lineError[256];
+                snprintf(lineError, sizeof(lineError),
+                    "Erro léxico na linha %d: identificador inválido '%s'\n", id, buffer);
+                fputs(lineError, lexycalErrorsIdentified);
+                printf("[ ERRO ] %s\n", lineError);
+                goto end;
+            }
+
+            // É um número puro: devolve todos os chars exceto o primeiro e reprocessa
+            // de forma simples: copia para numberBuffer e cria token
+            strncpy(numberBuffer, buffer, sizeof(numberBuffer) - 1);
+            numberBuffer[sizeof(numberBuffer) - 1] = '\0';
+
+            token->id    = id;
+            token->type  = "NUMBER";
+            token->value = strdup(numberBuffer);
+
+            fprintf(tokensIdentified, "<%s>\n", token->value);
+            printf("[ SUCESSO ] Número aceito na linha %d!\n", id);
+            goto end;
+
+        } else {
+            token->type = "IDENTIFIER"; // será ajustado após ler o buffer
+            goto identifiers;
+        }
+    }
+
+    // ── Operadores ────────────────────────────────────────────────────────
+    if (c == '+' || c == '-' || c == '*' || c == '/' ||
+        c == '=' || c == '>' || c == '<' || c == '!' ||
+        c == '~' || c == '%') {
+
+        if (c == '/') {
+            int nx2 = fgetc(copy);
+            if (nx2 == '*') {
+                // Comentário de bloco inválido para esta linguagem
                 char buffer[256];
                 int idx = 0;
-
-                buffer[idx++] = c;
-
-                int next = fgetc(copy);
-
-                int hasLetter = 0;
-
-                while (next != EOF && (isalnum(next) || next == '_')) {
-
-                    if (isalpha(next) || next == '_') {
-                        hasLetter = 1;  // ← AQUI está a chave
+                buffer[idx++] = '/';
+                buffer[idx++] = '*';
+                int ch;
+                while ((ch = fgetc(copy)) != EOF && idx < 254) {
+                    buffer[idx++] = ch;
+                    if (ch == '*') {
+                        int nx3 = fgetc(copy);
+                        if (nx3 == '/') { buffer[idx++] = nx3; break; }
+                        ungetc(nx3, copy);
                     }
-
-                    buffer[idx++] = next;
-                    next = fgetc(copy);
                 }
-
                 buffer[idx] = '\0';
-
-                if (next != EOF) ungetc(next, copy);
-
-                if (hasLetter) {
-                    
-                    char lineError[256];
-
-                    snprintf(lineError, sizeof(lineError),
-                        "Erro léxico na linha %d: identificador inválido '%s'\n", id, buffer);
-
-                    fputs(lineError, lexycalErrorsIdentified);
-                    printf("[ ERRO ] %s\n", lineError);
-
-                    goto end;
-                }
-                
-                ungetc(buffer[1], copy);
-                
-                c = buffer[0];
-
-                token->type = "NUMBER";
-                
-                goto numbers;
-            
-            } else {
-
-                token->type = "IDENTIFIER";
-
-                goto identifiers;
-
+                char lineError[512];
+                snprintf(lineError, sizeof(lineError),
+                    "Erro léxico na linha %d: comentário inválido '%s'\n", id, buffer);
+                fputs(lineError, lexycalErrorsIdentified);
+                printf("[ ERRO ] %s", lineError);
+                goto end;
             }
-
+            ungetc(nx2, copy);
         }
-        
-        // Operadores
-        if (c == '+' || 
-            c == '-' ||
-            c == '*' || 
-            c == '/' || 
-            c == '=' || 
-            c == '>' || 
-            c == '<' || 
-            c == '!' || 
-            c == '~' || 
-            c == '%') {
 
-                if (c == '/') {
-                    int next = fgetc(copy);
+        token->type = "OPERATOR";
+        goto operators;
+    }
 
-                    if (next == '*') {
+    // ── Delimitadores ─────────────────────────────────────────────────────
+    if (c == '(' || c == ')' || c == '{' || c == '}' ||
+        c == '[' || c == ']' || c == ',' || c == ':' ||
+        c == '.' || c == ';' || c == '\"') {
 
-                        char buffer[256];
-                        int idx = 0;
+        token->type = "DELIMITER";
+        goto delimiters;
+    }
 
-                        buffer[idx++] = '/';
-                        buffer[idx++] = '*';
+    // ── Comentários ───────────────────────────────────────────────────────
+    if (c == '#') {
+        token->type = "COMMENTARY";
+        goto comments;
+    }
 
-                        while ((c = fgetc(copy)) != EOF) {
-                            buffer[idx++] = c;
-
-                            if (c == '*') {
-                                int next2 = fgetc(copy);
-                                if (next2 == '/') {
-                                    buffer[idx++] = next2;
-                                    break;
-                                }
-                                ungetc(next2, copy);
-                            }
-                        }
-
-                        buffer[idx] = '\0';
-
-                        char lineError[512];
-
-                        snprintf(lineError, sizeof(lineError),
-                            "Erro léxico na linha %d: comentário inválido '%s'\n",
-                            id, buffer);
-
-                        fputs(lineError, lexycalErrorsIdentified);
-                        printf("[ ERRO ] %s", lineError);
-
-                        goto operators_end;
-                    }
-
-                    ungetc(next, copy);
-
-                }
-            
-                token->type = "OPERATOR";
-
-                goto operators;
-            
-            }
-
-            // Delimitadores
-            if (c == '(' ||
-                c == ')' ||
-                c == '{' ||
-                c == '}' ||
-                c == '[' ||
-                c == ']' ||
-                c == ',' ||
-                c == ':' ||
-                c == '.' ||
-                c == ';' ||
-                c == '\"') {
-
-                    int isClosureValid = 0;
-
-                    if (c == '(') {
-
-                        isClosureValid = findClosureCharacter(delimitersBuffer, ')', sizeof(delimitersBuffer));
-
-                        if (!isClosureValid) {
-
-                            char lineError[256];
-
-                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento ] esperado para o delimitador de abertura [\n", id);
-
-                            fputs(lineError, lexycalErrorsIdentified);
-
-                            //printf("[ ERRO ] %s", lineError);   
-
-                        }
-
-                    }
-
-                    if (c == '{') {
-
-                        isClosureValid = findClosureCharacter(delimitersBuffer, '}', sizeof(delimitersBuffer));
-
-                        if (!isClosureValid) {
-
-                            char lineError[256];
-
-                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento } esperado para o delimitador de abertura {\n", id);
-
-                            fputs(lineError, lexycalErrorsIdentified);
-
-                            //printf("[ ERRO ] %s", lineError);   
-
-                        }
-
-                    }
-
-                    if (c == '\'') {
-
-                        isClosureValid = findClosureCharacter(delimitersBuffer, '\'', sizeof(delimitersBuffer));
-
-                        if (!isClosureValid) {
-
-                            char lineError[256];
-
-                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento \' esperado para o delimitador de abertura \'\n", id);
-
-                            fputs(lineError, lexycalErrorsIdentified);
-
-                            //printf("[ ERRO ] %s", lineError);   
-
-                        }
-
-                    }
-
-                    if (c == '\"') {
-
-                        isClosureValid = findClosureCharacter(delimitersBuffer, '\"', sizeof(delimitersBuffer));
-
-                        if (!isClosureValid) {
-
-                            char lineError[256];
-
-                            snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: delimitador de fechamento \" esperado para o delimitador de abertura \"\n", id);
-
-                            fputs(lineError, lexycalErrorsIdentified);
-
-                            //printf("[ ERRO ] %s", lineError);   
-
-                        }
-
-                    }
-                    
-                    token->type = "DELIMITER";
-
-                    goto delimiters;
-                
-                }
-
-            }
-
-            // Comentários
-            if (c == '#') {
-                
-                token->type = "COMMENTARY";
-                
-                goto comments;
-                
-            }
-
-            if (!isValidChar(c)) {
-
-                    char lineError[256];
-
-                    snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: caractere inválido %c\n", id, c);
-
-                    fputs(lineError, lexycalErrorsIdentified);
-
-                    //printf("[ ERRO ] %s", lineError);   
-                
-            }
-
-            numbers_end:
-            numberBuffer[0] = '\0';
-            m = 0;
-
-            comment_end:
-            commentariesBuffer[0] = '\0';
-            i = 0;
-                
-            identifier_end:
-            identifiersBuffer[0] = '\0';
-            j = 0;
-                
-            operators_end:
-            operatorsBuffer[0] = '\0';
-            k = 0;
-                
-            delimiters_end:
-            delimitersBuffer[0] = '\0';
-            l = 0;
-            
-    
+    // ── Caractere inválido ────────────────────────────────────────────────
+    if (!isValidChar(c)) {
+        char lineError[256];
+        snprintf(lineError, sizeof(lineError),
+            "Erro léxico na linha %d: caractere inválido %c\n", id, c);
+        fputs(lineError, lexycalErrorsIdentified);
+    }
     goto end;
 
+    // ══════════════════════════════════════════════════════════════════════
     numbers:
-
-        int hasDot = 0;
-        
-        int hasExp = 0;
-    
-        goto NUMBERS_Q0;
+    {
+        hasDot = 0;
+        hasExp = 0;
+        m = 0;
 
         NUMBERS_Q0:
+        if (c != EOF && isdigit(c) && m < (int)sizeof(numberBuffer) - 1) {
+            numberBuffer[m++] = c;
+            c = fgetc(copy);
+            goto NUMBERS_Q1;
+        } else {
+            goto numbers_end;
+        }
 
-            if (c != EOF && isdigit(c) && m < sizeof(numberBuffer) - 1) {
-
-                numberBuffer[m] = c;
-                
-                c = fgetc(copy);
-
-                m++;
-
-                goto NUMBERS_Q1;
-
-            } else {
-
-                goto numbers_end;
-
-            }
-            
         NUMBERS_Q1:
-
-            if (c != EOF && isdigit(c) && m < sizeof(numberBuffer) - 1) {
-
-                numberBuffer[m] = c;
-
-                c = fgetc(copy);
-                
-                m++;
-                
-                goto NUMBERS_Q1;
-                
-            } else if (c != EOF && c == '.' && m < sizeof(numberBuffer) - 1) {
-    
-                if (hasDot) {
-
-                    numberBuffer[m++] = c;
-
-                    while ((c = fgetc(copy)) != EOF && (isdigit(c) || c == '.')) {
-                        numberBuffer[m++] = c;
-                    }
-
-                    numberBuffer[m] = '\0';
-
-                    char lineError[256];
-
-                    snprintf(lineError, sizeof(lineError),
-                        "Erro léxico na linha %d: número inválido %s\n", id, numberBuffer);
-
-                    fputs(lineError, lexycalErrorsIdentified);
-                    printf("[ ERRO ] %s", lineError);
-
-                    goto numbers_end;
-                }
-
-                hasDot = 1;
-
+        if (c != EOF && isdigit(c) && m < (int)sizeof(numberBuffer) - 1) {
+            numberBuffer[m++] = c;
+            c = fgetc(copy);
+            goto NUMBERS_Q1;
+        } else if (c != EOF && c == '.' && m < (int)sizeof(numberBuffer) - 1) {
+            if (hasDot) {
                 numberBuffer[m++] = c;
-                
-                c = fgetc(copy);
-                
-                goto NUMBERS_Q1;
-            
-            
-            } else if (c != EOF && (c == 'e' || c == 'E') && m < sizeof(numberBuffer) - 1) {
-    
-                if (hasExp) {
-
-                    numberBuffer[m] = '\0';
-                    
-                    char lineError[256];
-                    
-                    snprintf(lineError, sizeof(lineError), "Erro léxico na linha %d: número inválido %s\n", id, numberBuffer);
-
-                    
-                    fputs(lineError, lexycalErrorsIdentified);
-                    
-                    printf("[ ERRO ] %s", lineError);
-
-                    goto numbers_end;
+                int ch2;
+                while ((ch2 = fgetc(copy)) != EOF && (isdigit(ch2) || ch2 == '.')) {
+                    if (m < (int)sizeof(numberBuffer) - 1) numberBuffer[m++] = ch2;
                 }
-
-                hasExp = 1;
-            
-                numberBuffer[m++] = c;
-            
-                c = fgetc(copy);
-            
-                goto NUMBERS_Q1;
-            
-            } else {
-
-                numberBuffer[m++] = '\n';
-                
-                numberBuffer[m++] = '\0';
-                
-                token->id = id;
-
-                token->value = strdup(numberBuffer);
-
-                char *newline = strchr(token->value, '\n');
-                
-                if (newline) *newline = '\0';
-
-                fprintf(tokensIdentified, "<%s>\n", token->value);
-
-                char lineNumber[256];
-
-                snprintf(lineNumber, sizeof(lineNumber), "Identificado na linha %d: %s", id, numberBuffer);
-                
-                // fputs(lineNumber, tokensIdentified);
-
-                printf("[ SUCESSO ] Número aceito na linha %d!\n", id);
-
+                numberBuffer[m] = '\0';
+                char lineError[256];
+                snprintf(lineError, sizeof(lineError),
+                    "Erro léxico na linha %d: número inválido %s\n", id, numberBuffer);
+                fputs(lineError, lexycalErrorsIdentified);
+                printf("[ ERRO ] %s", lineError);
                 goto numbers_end;
-                
             }
+            hasDot = 1;
+            numberBuffer[m++] = c;
+            c = fgetc(copy);
+            goto NUMBERS_Q1;
+        } else if (c != EOF && (c == 'e' || c == 'E') && m < (int)sizeof(numberBuffer) - 1) {
+            if (hasExp) {
+                numberBuffer[m] = '\0';
+                char lineError[256];
+                snprintf(lineError, sizeof(lineError),
+                    "Erro léxico na linha %d: número inválido %s\n", id, numberBuffer);
+                fputs(lineError, lexycalErrorsIdentified);
+                printf("[ ERRO ] %s", lineError);
+                goto numbers_end;
+            }
+            hasExp = 1;
+            numberBuffer[m++] = c;
+            c = fgetc(copy);
+            goto NUMBERS_Q1;
+        } else {
+            if (c != EOF) ungetc(c, copy);
+            numberBuffer[m] = '\0';
 
+            token->id    = id;
+            token->type  = "NUMBER";
+            token->value = strdup(numberBuffer);
+
+            fprintf(tokensIdentified, "<%s>\n", token->value);
+            printf("[ SUCESSO ] Número aceito na linha %d!\n", id);
+            goto numbers_end;
+        }
+
+        numbers_end:
+        m = 0;
+        goto end;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     comments:
-
-        goto COMMENTARY_Q0;
+    {
+        i = 0;
 
         COMMENTARY_Q0:
+        if (c != EOF && c == '#' && i < (int)sizeof(commentariesBuffer) - 1) {
+            commentariesBuffer[i++] = c;
+            c = fgetc(copy);
+            goto COMMENTARY_Q1;
+        } else {
+            goto comment_end;
+        }
 
-            if (c != EOF && c == '#' && i < sizeof(commentariesBuffer) - 1) {
-
-                commentariesBuffer[i] = c;
-                
-                c = fgetc(copy);
-
-                i++;
-
-                goto COMMENTARY_Q1;
-
-            } else {
-
-                goto comment_end;
-
-            }
-            
         COMMENTARY_Q1:
+        if (c != EOF && c != '\n' && i < (int)sizeof(commentariesBuffer) - 1) {
+            commentariesBuffer[i++] = c;
+            c = fgetc(copy);
+            goto COMMENTARY_Q1;
+        } else if (c == '\n') {
+            id++;
+            commentariesBuffer[i++] = '\n';
+            commentariesBuffer[i]   = '\0';
 
-            if (c != EOF && c != '\n' && i < sizeof(commentariesBuffer) - 1) {
+            token->id    = id;
+            token->type  = "COMMENTARY";
+            token->value = strdup(commentariesBuffer);
 
-                commentariesBuffer[i] = c;
+            char *nl = strchr(token->value, '\n');
+            if (nl) *nl = '\0';
 
-                c = fgetc(copy);
-                
-                i++;
-                
-                goto COMMENTARY_Q1;
-                
-            } else if (c == '\n') {
-                
-                id++;
-                
-                commentariesBuffer[i++] = '\n';
-                
-                commentariesBuffer[i++] = '\0';
-                
-                token->id = id;
+            fprintf(tokensIdentified, "<%s>\n", token->value);
 
-                token->value = strdup(commentariesBuffer);
+            char lineComment[256];
+            snprintf(lineComment, sizeof(lineComment),
+                "Identificado na linha %d: %s", id, commentariesBuffer);
+            fputs(lineComment, commentariesIdentified);
 
-                char *newline = strchr(token->value, '\n');
-                
-                if (newline) *newline = '\0';
+            printf("[ SUCESSO ] Comentário aceito na linha %d!\n", id);
+            goto comment_end;
+        } else {
+            printf("[ ERRO ] Comentário não aceito!");
+            goto comment_end;
+        }
+
+        comment_end:
+        i = 0;
+        goto end;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    identifiers:
+    {
+        j = 0;
+
+        IDENTIFIER_Q0:
+        if (c != EOF &&
+            ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') &&
+            j < (int)sizeof(identifiersBuffer) - 1) {
+            identifiersBuffer[j++] = c;
+            c = fgetc(copy);
+            goto IDENTIFIER_Q1;
+        } else {
+            goto identifier_end;
+        }
+
+        IDENTIFIER_Q1:
+        if (c != EOF &&
+            ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+             (c >= '0' && c <= '9') || c == '_') &&
+            j < (int)sizeof(identifiersBuffer) - 1) {
+            identifiersBuffer[j++] = c;
+            c = fgetc(copy);
+            goto IDENTIFIER_Q1;
+        } else {
+            identifiersBuffer[j] = '\0';
+            if (c != EOF) ungetc(c, copy);
+
+            // FIX: checagem de keyword APÓS preencher o buffer
+            if (strcmp(identifiersBuffer, "not") == 0 ||
+                strcmp(identifiersBuffer, "and") == 0 ||
+                strcmp(identifiersBuffer, "or")  == 0) {
+                token->type = "KEYWORD";
+            } else {
+                token->type = "IDENTIFIER";
+            }
+
+            token->id    = id;
+            token->value = strdup(identifiersBuffer);
+
+            fprintf(tokensIdentified, "<%d, %s>\n", token->id, token->value);
+
+            char lineIdentifier[256];
+            snprintf(lineIdentifier, sizeof(lineIdentifier),
+                "Identificado na linha %d: %s", id, identifiersBuffer);
+            fputs(lineIdentifier, identifiersIdentified);
+
+            printf("[ SUCESSO ] Identificador aceito na linha %d!\n", id);
+            goto identifier_end;
+        }
+
+        identifier_end:
+        j = 0;
+        goto end;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    operators:
+    {
+        next = 0;
+        k    = 0;
+
+        OPERATORS_Q0:
+        if (c != EOF && k < (int)sizeof(operatorsBuffer) - 1 &&
+           (c == '+' || c == '-' || c == '/' || c == '%' || c == '~')) {
+
+            operatorsBuffer[k++] = c;
+            operatorsBuffer[k]   = '\0';
+
+            token->id    = id;
+            token->type  = "OPERATOR";
+            token->value = strdup(operatorsBuffer);
+
+            fprintf(tokensIdentified, "<%s>\n", token->value);
+
+            char lineOperator[256];
+            snprintf(lineOperator, sizeof(lineOperator),
+                "Identificado na linha %d: %s", id, operatorsBuffer);
+            fputs(lineOperator, operatorsIdentified);
+
+            printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
+            goto operators_end;
+
+        } else if (c == '>' || c == '<' || c == '=' || c == '!') {
+            next = fgetc(copy);
+            if (next == '=') {
+                operatorsBuffer[0] = c;
+                goto OPERATORS_Q2;
+            } else {
+                operatorsBuffer[0] = c;
+                operatorsBuffer[1] = '\0';
+                ungetc(next, copy);
+
+                token->id    = id;
+                token->type  = "OPERATOR";
+                token->value = strdup(operatorsBuffer);
 
                 fprintf(tokensIdentified, "<%s>\n", token->value);
 
-                char lineComment[256];
+                char lineOperator[256];
+                snprintf(lineOperator, sizeof(lineOperator),
+                    "Identificado na linha %d: %s", id, operatorsBuffer);
+                fputs(lineOperator, operatorsIdentified);
 
-                snprintf(lineComment, sizeof(lineComment), "Identificado na linha %d: %s", id, commentariesBuffer);
-                
-                fputs(lineComment, commentariesIdentified);
+                printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
+                goto operators_end;
+            }
 
-                printf("[ SUCESSO ] Comentário aceito na linha %d!\n", id);
-
-                goto comment_end;
-                
+        } else if (c == '*') {
+            next = fgetc(copy);
+            if (next == '*') {
+                operatorsBuffer[0] = c;
+                goto OPERATORS_Q2;
             } else {
-                
-                printf("[ ERRO ] Comentário não aceito!");
-                
-                goto comment_end;
-                
+                operatorsBuffer[0] = c;
+                operatorsBuffer[1] = '\0';
+                ungetc(next, copy);
+
+                token->id    = id;
+                token->type  = "OPERATOR";
+                token->value = strdup(operatorsBuffer);
+
+                fprintf(tokensIdentified, "<%s>\n", token->value);
+
+                char lineOperator[256];
+                snprintf(lineOperator, sizeof(lineOperator),
+                    "Identificado na linha %d: %s", id, operatorsBuffer);
+                fputs(lineOperator, operatorsIdentified);
+
+                printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
+                goto operators_end;
             }
+        }
+        goto operators_end;
 
-    identifiers:
-
-            goto IDENTIFIER_Q0;
-
-            IDENTIFIER_Q0:
-
-               if (c != EOF && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') && j < sizeof(identifiersBuffer) - 1) {
-
-                    identifiersBuffer[j] = c;
-                    
-                    c = fgetc(copy);
-
-                    j++;
-
-                    goto IDENTIFIER_Q1;
-
-                } else {
-
-                    goto identifier_end;
-
-                }
-            
-            IDENTIFIER_Q1:
-
-                if (c != EOF && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') && j < sizeof(identifiersBuffer) - 1) {
-
-                    identifiersBuffer[j] = c;
-
-                    c = fgetc(copy);
-                    
-                    j++;
-                    
-                    goto IDENTIFIER_Q1;
-                    
-                } else {
-                    
-                    identifiersBuffer[j] = '\0';
-
-                    if (c != EOF) ungetc(c, copy);
-
-                    token->id = id;
-
-                    token->value = strdup(identifiersBuffer);
-
-                    fprintf(tokensIdentified, "<%d, %s>\n", token->id, token->value);
-
-                    char lineIdentifier[256];
-
-                    snprintf(lineIdentifier, sizeof(lineIdentifier), "Identificado na linha %d: %s", id, identifiersBuffer);
-                    
-                    fputs(lineIdentifier, identifiersIdentified);
-
-                    printf("[ SUCESSO ] Identificador aceito na linha %d!\n", id);
-
-                    goto identifier_end;
-                    
-                }
-
-    operators:
-
-        int next = 0;
-
-        goto OPERATORS_Q0;
-
-        OPERATORS_Q0:
-                
-            if (c != EOF && k < sizeof(operatorsBuffer) - 1 &&
-               (c == '+' ||
-                c == '-' ||
-                c == '/' ||
-                c == '%' ||
-                c == '~')) {
-
-                    operatorsBuffer[k] = c;
-
-                    k++;
-
-                    operatorsBuffer[k] = '\0';
-
-                    token->id = id;
-
-                    token->value = strdup(operatorsBuffer);
-
-                    fprintf(tokensIdentified, "<%s>\n", token->value);
-
-                    char lineOperator[256];
-
-                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
-
-                    fputs(lineOperator, operatorsIdentified);
-
-                    printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
-
-                    goto operators_end;
-
-            } else if (c == '>' || c == '<' || c == '=' || c == '!') {
-
-                next = fgetc(copy);
-
-                if (next == '=') {
-
-                    operatorsBuffer[0] = c;
-            
-                    goto OPERATORS_Q2;
-            
-                } else {
-            
-                    operatorsBuffer[0] = c;
-            
-                    operatorsBuffer[1] = '\0';
-            
-                    ungetc(next, copy);
-
-                    operatorsBuffer[k] = c;
-
-                    token->id = id;
-
-                    token->value = strdup(operatorsBuffer);
-
-                    fprintf(tokensIdentified, "<%s>\n", token->value);
-
-                    k++;
-
-                    char lineOperator[256];
-
-                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
-
-                    fputs(lineOperator, operatorsIdentified);
-
-                    printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
-
-                    goto operators_end;
-            
-                }
-
-            } else if (c == '*') {
-
-                next = fgetc(copy);
-
-                if (next == '*') {
-
-                    operatorsBuffer[0] = c;
-
-                    goto OPERATORS_Q2;
-
-                } else {
-
-                    operatorsBuffer[0] = c;
-
-                    operatorsBuffer[1] = '\0';
-
-                    ungetc(next, copy);
-
-                    operatorsBuffer[k] = c;
-
-                    token->id = id;
-
-                    token->value = strdup(operatorsBuffer);
-
-                    fprintf(tokensIdentified, "<%s>\n", token->value);
-
-                    k++;
-
-                    operatorsBuffer[k] = '\0';
-
-                    char lineOperator[256];
-
-                    snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
-
-                    fputs(lineOperator, operatorsIdentified);
-
-                    printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
-
-                    goto operators_end;
-
-                }
-
-            }
-
-    OPERATORS_Q2:
-
+        OPERATORS_Q2:
         operatorsBuffer[1] = next;
-
         operatorsBuffer[2] = '\0';
 
-        ungetc(next, copy);
-
-        operatorsBuffer[k] = c;
-
-        token->id = id;
-
+        token->id    = id;
+        token->type  = "OPERATOR";
         token->value = strdup(operatorsBuffer);
 
         fprintf(tokensIdentified, "<%s>\n", token->value);
 
-        k++;
-
-        char lineOperator[256];
-
-        snprintf(lineOperator, sizeof(lineOperator), "Identificado na linha %d: %s", id, operatorsBuffer);
-
-        fputs(lineOperator, operatorsIdentified);
+        {
+            char lineOperator[256];
+            snprintf(lineOperator, sizeof(lineOperator),
+                "Identificado na linha %d: %s", id, operatorsBuffer);
+            fputs(lineOperator, operatorsIdentified);
+        }
 
         printf("[ SUCESSO ] Operador aceito na linha %d!\n", id);
 
-        goto operators_end;
-        
-    
-    delimiters:
+        operators_end:
+        k = 0;
+        goto end;
+    }
 
-        goto DELIMITERS_Q0;
+    // ══════════════════════════════════════════════════════════════════════
+    delimiters:
+    {
+        l = 0;
 
         DELIMITERS_Q0:
-
-            if (c != EOF && l < sizeof(delimitersBuffer) - 1 &&
-               (c == '(' ||
-                c == ')' ||
-                c == '{' ||
-                c == '}' ||
-                c == '[' ||
-                c == ']' ||
-                c == ',' ||
-                c == ':' ||
-                c == '.' ||
-                c == ';' ||
-                c == '\"')) {
-
-                    goto DELIMITERS_Q1;
-
-            } else {
-
-                goto delimiters_end;
-
-            }
-        
-        DELIMITERS_Q1:
-
-            delimitersBuffer[l] = c;
-
-            l++;
-
-            delimitersBuffer[l] = '\0';
-
-            token->id = id;
-
-            token->value = strdup(delimitersBuffer);
-
-            fprintf(tokensIdentified, "<%s>\n", token->value);
-
-            char lineDelimiter[256];
-
-            snprintf(lineDelimiter, sizeof(lineDelimiter), "Identificado na linha %d: %s", id, delimitersBuffer);
-
-            fputs(lineDelimiter, delimitersIdentified);
-
-            printf("[ SUCESSO ] Delimitador aceito na linha %d!\n", id);
-
+        if (c != EOF && l < (int)sizeof(delimitersBuffer) - 1 &&
+           (c == '(' || c == ')' || c == '{' || c == '}' ||
+            c == '[' || c == ']' || c == ',' || c == ':' ||
+            c == '.' || c == ';' || c == '\"')) {
+            goto DELIMITERS_Q1;
+        } else {
             goto delimiters_end;
+        }
 
+        DELIMITERS_Q1:
+        delimitersBuffer[l++] = c;
+        delimitersBuffer[l]   = '\0';
+
+        token->id    = id;
+        token->type  = "DELIMITER";
+        token->value = strdup(delimitersBuffer);
+
+        fprintf(tokensIdentified, "<%s>\n", token->value);
+
+        {
+            char lineDelimiter[256];
+            snprintf(lineDelimiter, sizeof(lineDelimiter),
+                "Identificado na linha %d: %s", id, delimitersBuffer);
+            fputs(lineDelimiter, delimitersIdentified);
+        }
+
+        printf("[ SUCESSO ] Delimitador aceito na linha %d!\n", id);
+
+        delimiters_end:
+        l = 0;
+        goto end;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     end:
-    i = 0;
-    j = 0;
-    k = 0;
-    l = 0;
+    i = 0; j = 0; k = 0; l = 0;
 
     fclose(commentariesIdentified);
     fclose(identifiersIdentified);
@@ -1321,72 +850,67 @@ Token *getNextToken(FILE *copy) {
     fclose(tokensIdentified);
     fclose(lexycalErrorsIdentified);
 
+    // FIX: retorna NULL se o token não foi preenchido, evitando acesso a value==NULL no parser
+    if (token->value == NULL) {
+        free(token);
+        return NULL;
+    }
+
     return token;
-    
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Tabela de Símbolos
+// ══════════════════════════════════════════════════════════════════════════════
+
 int insertTokenIntoSymbolTable(Token token, SymbolTable *symbolTable) {
+    // FIX: checar value e type antes de strdup
+    if (token.value == NULL || token.type == NULL) return -1;
 
     for (int i = 0; i < 256; i++) {
-
-        if (symbolTable->id[i] == token.id) {
-            return 0;
-        }
-
+        if (symbolTable->id[i] == token.id) return 0;
     }
 
     for (int i = 0; i < 256; i++) {
-
         if (symbolTable->id[i] == 0) {
-            symbolTable->id[i] = token.id;
+            symbolTable->id[i]   = token.id;
             symbolTable->name[i] = strdup(token.value);
             symbolTable->type[i] = strdup(token.type);
             return 1;
         }
-
     }
 
     return -1;
-
 }
 
 int fillSymbolTable(SymbolTable *symbolTable) {
-
     FILE *tokensIdentified = fopen(TOKENS_DEDICATED_FILE, "r");
-
     if (!tokensIdentified) return 1;
 
     char line[256];
-
     while (fgets(line, sizeof(line), tokensIdentified)) {
-
         char *tokenValue = strtok(line, "<>\n");
-
         if (tokenValue) {
             Token token;
-            token.id = id++;
+            token.id    = id++;
             token.value = strdup(tokenValue);
-            token.type = "IDENTIFIER"; // Aqui você pode implementar uma lógica para determinar o tipo do token
+            token.type  = "IDENTIFIER";
             insertTokenIntoSymbolTable(token, symbolTable);
         }
     }
 
     fclose(tokensIdentified);
-
     return 0;
 }
 
 int printSymbolTable(SymbolTable *symbolTable) {
-
     int maxName = strlen("Nome");
     int maxType = strlen("Tipo");
 
     for (int i = 0; i < 256; i++) {
         if (symbolTable->id[i] != 0) {
-            
             int nameLen = strlen(symbolTable->name[i]);
             int typeLen = strlen(symbolTable->type[i]);
-
             if (nameLen > maxName) maxName = nameLen;
             if (typeLen > maxType) maxType = typeLen;
         }
@@ -1396,11 +920,7 @@ int printSymbolTable(SymbolTable *symbolTable) {
     maxType += 2;
 
     printf("Tabela de Símbolos:\n");
-
-    printf("%-10s %-*s %-*s\n",
-           "ID",
-           maxName, "Nome",
-           maxType, "Tipo");
+    printf("%-10s %-*s %-*s\n", "ID", maxName, "Nome", maxType, "Tipo");
 
     int totalWidth = 10 + maxName + maxType + 2;
     for (int i = 0; i < totalWidth; i++) printf("=");
@@ -1409,32 +929,31 @@ int printSymbolTable(SymbolTable *symbolTable) {
     for (int i = 0; i < 256; i++) {
         if (symbolTable->id[i] != 0) {
             printf("%-10d %-*s %-*s\n",
-                   symbolTable->id[i],
-                   maxName, symbolTable->name[i],
-                   maxType, symbolTable->type[i]);
+                symbolTable->id[i],
+                maxName, symbolTable->name[i],
+                maxType, symbolTable->type[i]);
         }
     }
 
     return 0;
 }
 
-ASTNode *createASTNode(Token token, ASTNode *left, ASTNode *right) {
-    
-    ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
-    
-    node->token = token;
-    
-    node->left = left;
-    
-    node->right = right;
-    
-    return node;
+// ══════════════════════════════════════════════════════════════════════════════
+// AST
+// ══════════════════════════════════════════════════════════════════════════════
 
+ASTNode *createASTNode(Token token, ASTNode *left, ASTNode *right) {
+    ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
+    node->token = token;
+    node->left  = left;
+    node->right = right;
+    return node;
 }
 
 int isRelOp(Token token) {
-    return strcmp(token.value, "<") == 0 ||
-           strcmp(token.value, ">") == 0 ||
+    if (token.value == NULL) return 0;
+    return strcmp(token.value, "<")  == 0 ||
+           strcmp(token.value, ">")  == 0 ||
            strcmp(token.value, "==") == 0 ||
            strcmp(token.value, "!=") == 0 ||
            strcmp(token.value, "<=") == 0 ||
@@ -1444,32 +963,55 @@ int isRelOp(Token token) {
            strcmp(token.value, "is") == 0;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Parser (análise sintática)
+// ══════════════════════════════════════════════════════════════════════════════
+
+void sync(FILE *file) {
+    while (CurrentToken != NULL &&
+           CurrentToken->value != NULL &&
+           strcmp(CurrentToken->value, ";")  != 0 &&
+           strcmp(CurrentToken->value, "\n") != 0) {
+        CurrentToken = getNextToken(file);
+    }
+    if (CurrentToken != NULL)
+        CurrentToken = getNextToken(file);
+}
+
+ASTNode *parseExpression(FILE *file); // forward declaration
+
 ASTNode *parseFactor(FILE *file) {
+    // FIX: checar value antes de qualquer strcmp
+    if (CurrentToken == NULL || CurrentToken->value == NULL)
+        return NULL;
 
     Token token = *CurrentToken;
 
-    if (strcmp(token.type, "NUMBER") == 0 ||
+    if (strcmp(token.type, "NUMBER")     == 0 ||
         strcmp(token.type, "IDENTIFIER") == 0) {
-
         CurrentToken = getNextToken(file);
         return createASTNode(token, NULL, NULL);
     }
 
     if (strcmp(token.value, "(") == 0) {
-
         CurrentToken = getNextToken(file);
+
+        if (CurrentToken == NULL || CurrentToken->value == NULL) {
+            fprintf(sintaticErrorsIdentified,
+                "Erro sintático na linha %d: expressão esperada após '('\n",
+                token.id);
+            sync(file);
+            return NULL;
+        }
 
         ASTNode *node = parseExpression(file);
 
-        if (CurrentToken == NULL || strcmp(CurrentToken->value, ")") != 0) {
-            // printf("Erro sintático: esperado ')'\n");
-            
-            char lineError[256];
-
-            snprintf(lineError, sizeof(lineError), "Erro sintático na linha %d: esperado ')'\n", id);
-
-            fputs(lineError, sintaticErrorsIdentified);
-
+        if (CurrentToken == NULL || CurrentToken->value == NULL ||
+            strcmp(CurrentToken->value, ")") != 0) {
+            fprintf(sintaticErrorsIdentified,
+                "Erro sintático na linha %d: esperado ')'\n",
+                token.id);
+            sync(file);
             return NULL;
         }
 
@@ -1477,18 +1019,60 @@ ASTNode *parseFactor(FILE *file) {
         return node;
     }
 
+    if (strcmp(token.value, "[") == 0) {
+        CurrentToken = getNextToken(file);
+
+        if (CurrentToken != NULL && CurrentToken->value != NULL &&
+            strcmp(CurrentToken->value, "]") == 0) {
+            CurrentToken = getNextToken(file);
+            return createASTNode(token, NULL, NULL);
+        }
+
+        ASTNode *first    = parseExpression(file);
+        ASTNode *listNode = first;
+
+        while (CurrentToken != NULL && CurrentToken->value != NULL &&
+               strcmp(CurrentToken->value, ",") == 0) {
+            CurrentToken = getNextToken(file);
+            ASTNode *nx = parseExpression(file);
+            listNode = createASTNode(token, listNode, nx);
+        }
+
+        if (CurrentToken == NULL || CurrentToken->value == NULL ||
+            strcmp(CurrentToken->value, "]") != 0) {
+            fprintf(sintaticErrorsIdentified,
+                "Erro sintático na linha %d: esperado ']'\n",
+                token.id);
+            sync(file);
+            return NULL;
+        }
+
+        CurrentToken = getNextToken(file);
+        return listNode;
+    }
+
+    char lineError[256];
+    snprintf(lineError, sizeof(lineError),
+        "Erro sintático na linha %d: token inesperado '%s'\n",
+        token.id, token.value);
+    fputs(lineError, sintaticErrorsIdentified);
+
+    CurrentToken = getNextToken(file);
+    sync(file);
+    return NULL;
 }
 
 ASTNode *parseUnary(FILE *file) {
+    // FIX: checar value antes de strcmp
+    if (CurrentToken == NULL || CurrentToken->value == NULL)
+        return NULL;
 
     Token token = *CurrentToken;
 
     if (strcmp(token.value, "+") == 0 ||
         strcmp(token.value, "-") == 0 ||
         strcmp(token.value, "~") == 0) {
-
         CurrentToken = getNextToken(file);
-
         ASTNode *child = parseUnary(file);
         return createASTNode(token, NULL, child);
     }
@@ -1497,16 +1081,14 @@ ASTNode *parseUnary(FILE *file) {
 }
 
 ASTNode *parsePower(FILE *file) {
-
     ASTNode *left = parseUnary(file);
+    if (left == NULL) return NULL;
 
-    if (CurrentToken != NULL && strcmp(CurrentToken->value, "**") == 0) {
-
+    if (CurrentToken != NULL && CurrentToken->value != NULL &&
+        strcmp(CurrentToken->value, "**") == 0) {
         Token op = *CurrentToken;
         CurrentToken = getNextToken(file);
-
         ASTNode *right = parsePower(file);
-
         return createASTNode(op, left, right);
     }
 
@@ -1514,17 +1096,14 @@ ASTNode *parsePower(FILE *file) {
 }
 
 ASTNode *parseTerm(FILE *file) {
-
     ASTNode *node = parsePower(file);
 
-    while (CurrentToken != NULL &&
+    while (CurrentToken != NULL && CurrentToken->value != NULL &&
           (strcmp(CurrentToken->value, "*") == 0 ||
            strcmp(CurrentToken->value, "/") == 0 ||
            strcmp(CurrentToken->value, "%") == 0)) {
-
         Token op = *CurrentToken;
         CurrentToken = getNextToken(file);
-
         ASTNode *right = parsePower(file);
         node = createASTNode(op, node, right);
     }
@@ -1533,16 +1112,13 @@ ASTNode *parseTerm(FILE *file) {
 }
 
 ASTNode *parseArithExpr(FILE *file) {
-
     ASTNode *node = parseTerm(file);
 
-    while (CurrentToken != NULL &&
+    while (CurrentToken != NULL && CurrentToken->value != NULL &&
           (strcmp(CurrentToken->value, "+") == 0 ||
            strcmp(CurrentToken->value, "-") == 0)) {
-
         Token op = *CurrentToken;
         CurrentToken = getNextToken(file);
-
         ASTNode *right = parseTerm(file);
         node = createASTNode(op, node, right);
     }
@@ -1551,14 +1127,12 @@ ASTNode *parseArithExpr(FILE *file) {
 }
 
 ASTNode *parseRelExpr(FILE *file) {
-
     ASTNode *node = parseArithExpr(file);
 
-    while (CurrentToken != NULL && isRelOp(*CurrentToken)) {
-
+    while (CurrentToken != NULL && CurrentToken->value != NULL &&
+           isRelOp(*CurrentToken)) {
         Token op = *CurrentToken;
         CurrentToken = getNextToken(file);
-
         ASTNode *right = parseArithExpr(file);
         node = createASTNode(op, node, right);
     }
@@ -1567,14 +1141,11 @@ ASTNode *parseRelExpr(FILE *file) {
 }
 
 ASTNode *parseNotExpr(FILE *file) {
-
-    if (CurrentToken != NULL && strcmp(CurrentToken->value, "not") == 0) {
-
+    if (CurrentToken != NULL && CurrentToken->value != NULL &&
+        strcmp(CurrentToken->value, "not") == 0) {
         Token op = *CurrentToken;
         CurrentToken = getNextToken(file);
-
         ASTNode *child = parseNotExpr(file);
-
         return createASTNode(op, NULL, child);
     }
 
@@ -1582,14 +1153,12 @@ ASTNode *parseNotExpr(FILE *file) {
 }
 
 ASTNode *parseAndExpr(FILE *file) {
-
     ASTNode *node = parseNotExpr(file);
 
-    while (CurrentToken != NULL && strcmp(CurrentToken->value, "and") == 0) {
-
+    while (CurrentToken != NULL && CurrentToken->value != NULL &&
+           strcmp(CurrentToken->value, "and") == 0) {
         Token op = *CurrentToken;
         CurrentToken = getNextToken(file);
-
         ASTNode *right = parseNotExpr(file);
         node = createASTNode(op, node, right);
     }
@@ -1598,14 +1167,12 @@ ASTNode *parseAndExpr(FILE *file) {
 }
 
 ASTNode *parseOrExpr(FILE *file) {
-
     ASTNode *node = parseAndExpr(file);
 
-    while (CurrentToken != NULL && strcmp(CurrentToken->value, "or") == 0) {
-
+    while (CurrentToken != NULL && CurrentToken->value != NULL &&
+           strcmp(CurrentToken->value, "or") == 0) {
         Token op = *CurrentToken;
         CurrentToken = getNextToken(file);
-
         ASTNode *right = parseAndExpr(file);
         node = createASTNode(op, node, right);
     }
@@ -1615,4 +1182,40 @@ ASTNode *parseOrExpr(FILE *file) {
 
 ASTNode *parseExpression(FILE *file) {
     return parseOrExpr(file);
+}
+
+ASTNode *parseStatement(FILE *file) {
+    if (CurrentToken == NULL || CurrentToken->value == NULL) return NULL;
+
+    if (strcmp(CurrentToken->type, "IDENTIFIER") == 0) {
+        Token ident = *CurrentToken;
+        CurrentToken = getNextToken(file);
+
+        if (CurrentToken != NULL && CurrentToken->value != NULL &&
+            strcmp(CurrentToken->value, "=") == 0) {
+            Token assign = *CurrentToken;
+            CurrentToken = getNextToken(file);
+            ASTNode *expr = parseExpression(file);
+            return createASTNode(assign,
+                createASTNode(ident, NULL, NULL),
+                expr);
+        }
+
+        return createASTNode(ident, NULL, NULL);
+    }
+
+    return parseExpression(file);
+}
+
+ASTNode *parseProgram(FILE *file) {
+    ASTNode *root = NULL;
+
+    while (CurrentToken != NULL && CurrentToken->value != NULL) {
+        ASTNode *stmt = parseStatement(file);
+        if (stmt == NULL) {
+            sync(file);
+        }
+    }
+
+    return root;
 }
