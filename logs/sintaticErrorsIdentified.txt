@@ -1,0 +1,1 @@
+ERRO SINTATICO na linha 1: esperado 'inicio de comando valido (identificador ou palavra reservada)', mas recebeu '('

@@ -1,6 +1,0 @@
-linha 1: ######################
-linha 3: #exemplo1
-linha 15: ######################
-linha 17: #exemplo2
-linha 36: ######################
-linha 38: #exemplo3
