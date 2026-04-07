@@ -1,134 +1,99 @@
-<######################>
-<#exemplo1>
-<5, vetorList>
-<=>
-<[>
-<2>
-<,>
-<3>
-<,>
-<5>
-<,>
-<7>
-<,>
-<11>
-<7, i>
-<=>
-<0>
-<9, while>
-<9, i>
-<<>
-<9, len>
-<(>
-<9, vetorList>
-<)>
-<:>
-<11, print>
-<(>
-<11, vetorList>
-<[>
-<11, i>
-<]>
-<)>
-<13, i>
-<=>
-<13, i>
-<+>
-<1>
-<######################>
-<#exemplo2>
-<20, number1>
-<=>
-<20, input>
-<(>
-<">
-<20, digite>
-<20, um>
-<20, numero>
-<:>
-<">
-<)>
-<22, number2>
-<=>
-<22, input>
-<(>
-<">
-<22, digite>
-<22, outro>
-<22, numero>
-<:>
-<">
-<)>
-<24, if>
-<24, number1>
-<>>
-<24, number2>
-<:>
-<26, print>
-<">
-<26, o>
-<26, maior>
-<26, numero>
-<26, eh>
-<->
-<->
-<->
-<>>
-<">
-<,>
-<26, number1>
-<28, if>
-<28, number2>
-<>>
-<28, number1>
-<:>
-<30, print>
-<">
-<30, o>
-<30, maior>
-<30, numero>
-<30, eh>
-<->
-<->
-<->
-<>>
-<">
-<,>
-<30, number2>
-<32, else>
-<:>
-<34, print>
-<34, number1>
-<,>
-<">
-<=>
-<">
-<,>
-<34, number2>
-<######################>
-<#exemplo3>
-<41, for>
-<41, i>
-<41, in>
-<41, range>
-<(>
-<50>
-<:>
-<43, if>
-<43, i>
-<%>
-<2>
-<==>
-<=>
-<0>
-<:>
-<45, print>
-<45, i>
-<,>
-<45, par>
-<47, else>
-<:>
-<49, print>
-<49, i>
-<,>
-<49, impar>
+linha 5: IDENTIFICADOR | vetorList
+linha 5: OPERADOR | =
+linha 5: DELIMITADOR | [
+linha 5: NUMERO | 2
+linha 5: DELIMITADOR | ,
+linha 5: NUMERO | 3
+linha 5: DELIMITADOR | ,
+linha 5: NUMERO | 5
+linha 5: DELIMITADOR | ,
+linha 5: NUMERO | 7
+linha 5: DELIMITADOR | ,
+linha 5: NUMERO | 11
+linha 5: DELIMITADOR | ]
+linha 7: IDENTIFICADOR | i
+linha 7: OPERADOR | =
+linha 7: NUMERO | 0
+linha 9: PALAVRA_RESERVADA | while
+linha 9: IDENTIFICADOR | i
+linha 9: OPERADOR | <
+linha 9: PALAVRA_RESERVADA | len
+linha 9: DELIMITADOR | (
+linha 9: IDENTIFICADOR | vetorList
+linha 9: DELIMITADOR | )
+linha 9: DELIMITADOR | :
+linha 11: PALAVRA_RESERVADA | print
+linha 11: DELIMITADOR | (
+linha 11: IDENTIFICADOR | vetorList
+linha 11: DELIMITADOR | [
+linha 11: IDENTIFICADOR | i
+linha 11: DELIMITADOR | ]
+linha 11: DELIMITADOR | )
+linha 13: IDENTIFICADOR | i
+linha 13: OPERADOR | =
+linha 13: IDENTIFICADOR | i
+linha 13: OPERADOR | +
+linha 13: NUMERO | 1
+linha 20: IDENTIFICADOR | number1
+linha 20: OPERADOR | =
+linha 20: PALAVRA_RESERVADA | input
+linha 20: DELIMITADOR | (
+linha 20: STRING_LITERAL | "digite um numero: "
+linha 20: DELIMITADOR | )
+linha 22: IDENTIFICADOR | number2
+linha 22: OPERADOR | =
+linha 22: PALAVRA_RESERVADA | input
+linha 22: DELIMITADOR | (
+linha 22: STRING_LITERAL | "digite outro numero: "
+linha 22: DELIMITADOR | )
+linha 24: PALAVRA_RESERVADA | if
+linha 24: IDENTIFICADOR | number1
+linha 24: OPERADOR | >
+linha 24: IDENTIFICADOR | number2
+linha 24: DELIMITADOR | :
+linha 26: PALAVRA_RESERVADA | print
+linha 26: STRING_LITERAL | "o maior numero eh ---> "
+linha 26: DELIMITADOR | ,
+linha 26: IDENTIFICADOR | number1
+linha 28: PALAVRA_RESERVADA | if
+linha 28: IDENTIFICADOR | number2
+linha 28: OPERADOR | >
+linha 28: IDENTIFICADOR | number1
+linha 28: DELIMITADOR | :
+linha 30: PALAVRA_RESERVADA | print
+linha 30: STRING_LITERAL | "o maior numero eh ---> "
+linha 30: DELIMITADOR | ,
+linha 30: IDENTIFICADOR | number2
+linha 32: PALAVRA_RESERVADA | else
+linha 32: DELIMITADOR | :
+linha 34: PALAVRA_RESERVADA | print
+linha 34: IDENTIFICADOR | number1
+linha 34: DELIMITADOR | ,
+linha 34: STRING_LITERAL | " = "
+linha 34: DELIMITADOR | ,
+linha 34: IDENTIFICADOR | number2
+linha 41: PALAVRA_RESERVADA | for
+linha 41: IDENTIFICADOR | i
+linha 41: PALAVRA_RESERVADA | in
+linha 41: PALAVRA_RESERVADA | range
+linha 41: DELIMITADOR | (
+linha 41: NUMERO | 50
+linha 41: DELIMITADOR | )
+linha 41: DELIMITADOR | :
+linha 43: PALAVRA_RESERVADA | if
+linha 43: IDENTIFICADOR | i
+linha 43: OPERADOR | %
+linha 43: NUMERO | 2
+linha 43: OPERADOR | ==
+linha 43: NUMERO | 0
+linha 43: DELIMITADOR | :
+linha 45: PALAVRA_RESERVADA | print
+linha 45: IDENTIFICADOR | i
+linha 45: DELIMITADOR | ,
+linha 45: STRING_LITERAL | 'é par'
+linha 47: PALAVRA_RESERVADA | else
+linha 47: DELIMITADOR | :
+linha 49: PALAVRA_RESERVADA | print
+linha 49: IDENTIFICADOR | i
+linha 49: DELIMITADOR | ,
+linha 49: STRING_LITERAL | 'é impar'
