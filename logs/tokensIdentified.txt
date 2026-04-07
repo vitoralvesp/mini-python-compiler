@@ -1,0 +1,9 @@
+linha 1: IDENTIFICADOR | a
+linha 1: OPERADOR | =
+linha 1: NUMERO | 5
+linha 2: IDENTIFICADOR | b
+linha 2: OPERADOR | =
+linha 2: NUMERO | 3
+linha 3: IDENTIFICADOR | c
+linha 3: OPERADOR | =
+linha 3: IDENTIFICADOR | a

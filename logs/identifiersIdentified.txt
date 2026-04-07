@@ -1,0 +1,4 @@
+linha 1: a
+linha 2: b
+linha 3: c
+linha 3: a
