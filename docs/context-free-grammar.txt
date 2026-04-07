@@ -1,0 +1,64 @@
+<programa> ::= <comando>*
+
+<comando> ::= <atribuicao>
+            | <chamada_ou_expr>
+            | <print>
+            | <return>
+            | <if>
+            | <while>
+            | <for>
+            | <def>
+            | <break>
+            | <continue>
+            | <raise>
+
+<atribuicao> ::= IDENTIFICADOR "=" <expressao>
+
+<chamada_ou_expr> ::= <fator>
+
+<print> ::= "print" "(" <lista_expr>? ")"
+          | "print" <lista_expr>
+
+<lista_expr> ::= <expressao> ("," <expressao>)*
+
+<return> ::= "return" <expressao>?
+
+<if> ::= "if" <expressao> ":" <bloco>
+         ("elif" <expressao> ":" <bloco>)*
+         ("else" ":" <bloco>)?
+
+<while> ::= "while" <expressao> ":" <bloco>
+
+<for> ::= "for" IDENTIFICADOR "in" <fator> ":" <bloco>
+
+<def> ::= "def" IDENTIFICADOR "(" <parametros>? ")" ":" <bloco>
+
+<parametros> ::= IDENTIFICADOR ("," IDENTIFICADOR)*
+
+<break> ::= "break"
+<continue> ::= "continue"
+<raise> ::= "raise" <expressao>
+
+<bloco> ::= <comando>
+
+<expressao> ::= <relacional> (("and" | "or") <relacional>)*
+
+<relacional> ::= <aritmetica> ( <op_rel> <aritmetica> )*
+
+<op_rel> ::= ">" | "<" | ">=" | "<=" | "==" | "!=" | "<>" | "in" | "is"
+
+<aritmetica> ::= <termo> (("+" | "-") <termo>)*
+
+<termo> ::= <potencia> (("*" | "/" | "%") <potencia>)*
+
+<potencia> ::= <fator> ("**" <potencia>)?
+
+<fator> ::= IDENTIFICADOR <posfixo>?
+          | NUMERO
+          | STRING
+          | PALAVRA_RESERVADA <chamada>?
+          | "[" <lista_expr>? "]"
+          | "(" <expressao> ")"
+
+<posfixo> ::= "[" <expressao> "]"
+            | "(" <lista_expr>? ")"
