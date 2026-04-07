@@ -1,3 +1,11 @@
-linha 1: =
-linha 2: =
-linha 3: =
+linha 5: =
+linha 7: =
+linha 9: <
+linha 13: =
+linha 13: +
+linha 20: =
+linha 22: =
+linha 24: >
+linha 28: >
+linha 43: %
+linha 43: ==
