@@ -1,5 +1,6 @@
 ## Compilador de MiniPython
 Projeto desenvolvido para realizar a **análise léxica** e **análise sintática** de programas em **MiniPython**.  
+Desenvolvido por Anna Luíza Stella Santos (10417401) e Vitor Alves Pereira (10410862). 
 
 #### Para compilar
 `gcc -Wall -Wno-unused-result -g -Og src/miniPythonCompiler.c -o temp/app`  
