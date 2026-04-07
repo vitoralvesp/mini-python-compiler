@@ -1,1 +1,1 @@
-Erro sintático na linha 1: esperado ')'
+ERRO SINTATICO na linha 2: esperado token tipo 4, mas recebeu 'variavel'

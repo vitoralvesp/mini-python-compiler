@@ -9,6 +9,16 @@
 #include <string.h>
 #include <ctype.h>
 
+#define FILE_OUTPUT_PATH "./output/"
+#define FILE_TEMP_PATH "../temp/"
+#define FILEPATH_COMMENTARIES_DEDICATED_FILE "./logs/commentariesIdentified.txt"
+#define FILEPATH_IDENTIFIERS_DEDICATED_FILE "./logs/identifiersIdentified.txt"
+#define FILEPATH_OPERATORS_DEDICATED_FILE "./logs/operatorsIdentified.txt"
+#define FILEPATH_DELIMITERS_DEDICATED_FILE "./logs/delimitersIdentified.txt"
+#define TOKENS_DEDICATED_FILE "./logs/tokensIdentified.txt"
+#define LEXYCAL_ERRORS_DEDICATED_FILE "./logs/lexycalErrorsIdentified.txt"
+#define SINTATIC_ERRORS_DEDICATED_FILE "./logs/sintaticErrorsIdentified.txt"
+
 /** @brief Estrutura de dados para representação dos átomos (tokens) identificados pelo Analisador Léxico. Cada átomo é classificado por um tipo específico, como identificadores, números, operadores, delimitadores, palavras reservadas e literais de string. O tipo EOS (End Of Stream) é utilizado para indicar o término do fluxo de caracteres do arquivo fonte.
  * @param ERRO: Representa um token inválido ou erro de análise léxica.
  * @param IDENTIFICADOR: Representa nomes de variáveis, funções ou outros identificadores definidos pelo usuário.
@@ -48,6 +58,13 @@ TToken *token_atual;
 int linha_atual = 1;
 
 FILE *input_ptr;
+FILE *commentariesFile;
+FILE *identifiersFile;
+FILE *operatorsFile;
+FILE *delimitersFile;
+FILE *tokensFile;
+FILE *lexicalErrorsFile;
+FILE *sintaticErrorsFile;
 
 const char *palavras_reservadas[] = {
     "return", "from", "while", "as", "elif", "with", "else", "if", 
@@ -63,6 +80,19 @@ int eh_palavra_reservada(char *s) {
     for (int i = 0; i < 25; i++) {
         if (strcmp(s, palavras_reservadas[i]) == 0) return 1;
     }
+    return 0;
+}
+
+/** @brief Função para limpar o conteúdo de um arquivo, utilizada para garantir que os arquivos de log estejam vazios antes de iniciar um novo processo de compilação. A função abre o arquivo em modo de escrita ("w"), o que automaticamente limpa seu conteúdo, e em seguida fecha o arquivo. Em caso de erro ao abrir o arquivo, a função imprime uma mensagem de erro e retorna 1; caso contrário, retorna 0 indicando sucesso na limpeza do arquivo.
+ * @return Retorna 0 se o arquivo foi limpo com sucesso, ou 1 em caso de erro ao abrir o arquivo para limpeza.
+ */
+int clearFile(const char *filePath) {
+    FILE *file = fopen(filePath, "w");
+    if (!file) {
+        perror("Erro ao limpar o arquivo");
+        return 1;
+    }
+    fclose(file);
     return 0;
 }
 
@@ -115,7 +145,14 @@ TToken* obter_atomo() {
     if (strchr("+-*/%=><!~", c)) goto estado_operador;
     if (strchr("(){}[],:.;", c)) goto estado_delimitador;
 
+    lexicalErrorsFile = fopen(LEXYCAL_ERRORS_DEDICATED_FILE, "a");
+
     printf("ERRO LEXICO na linha %d: sequencia '%c' invalida\n", linha_atual, c);
+
+    fprintf(lexicalErrorsFile, "ERRO LEXICO na linha %d: sequencia '%c' invalida\n", linha_atual, c);
+
+    fclose(lexicalErrorsFile);
+
     exit(1);
 
 estado_numero:
@@ -187,7 +224,15 @@ void consome(TAtomo esperado) {
         token_atual = obter_atomo();
     
     } else {
+
+        sintaticErrorsFile = fopen(SINTATIC_ERRORS_DEDICATED_FILE, "a");
+
         printf("ERRO SINTATICO na linha %d: esperado token tipo %d, mas recebeu '%s'\n", token_atual->linha, esperado, token_atual->valor);
+
+        fprintf(sintaticErrorsFile, "ERRO SINTATICO na linha %d: esperado token tipo %d, mas recebeu '%s'\n", token_atual->linha, esperado, token_atual->valor);
+
+        fclose(sintaticErrorsFile);
+
         exit(1);
     }
 }
@@ -245,7 +290,15 @@ void parse_fator() {
         consome(DELIMITADOR);
 
     } else {
+
+        sintaticErrorsFile = fopen(SINTATIC_ERRORS_DEDICATED_FILE, "a");
+
         printf("ERRO SINTATICO na linha %d: fator invalido '%s'\n", token_atual->linha, token_atual->valor);
+
+        fprintf(sintaticErrorsFile, "ERRO SINTATICO na linha %d: fator invalido '%s'\n", token_atual->linha, token_atual->valor);
+
+        fclose(sintaticErrorsFile);
+        
         exit(1);
     }
 }
@@ -372,6 +425,14 @@ void parse_programa() {
 }
 
 int main(int argc, char *argv[]) {
+
+    commentariesFile = fopen(FILEPATH_COMMENTARIES_DEDICATED_FILE, "w");
+    identifiersFile = fopen(FILEPATH_IDENTIFIERS_DEDICATED_FILE, "w");
+    operatorsFile = fopen(FILEPATH_OPERATORS_DEDICATED_FILE, "w");
+    delimitersFile = fopen(FILEPATH_DELIMITERS_DEDICATED_FILE, "w");
+    tokensFile = fopen(TOKENS_DEDICATED_FILE, "w");
+    lexicalErrorsFile = fopen(LEXYCAL_ERRORS_DEDICATED_FILE, "w");
+    sintaticErrorsFile = fopen(SINTATIC_ERRORS_DEDICATED_FILE, "w");
     
     if (argc < 2) {
         printf("Uso: %s <arquivo_fonte>\n", argv[0]);
